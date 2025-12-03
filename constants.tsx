@@ -18,10 +18,43 @@ import { Microservice } from './types';
 
 export const APP_NAME = "NeuroForge AI";
 
+// === API CONFIGURATION ===
+// Edit these URLs to point to your internal backend.
+// The Dashboard will send a POST request to these endpoints to retrieve metrics.
+export const DASHBOARD_API_CONFIG = {
+  telemetry: {
+    // Fetches top-level cards (active workers, gpu util, etc)
+    url: 'https://jsonplaceholder.typicode.com/posts', 
+    method: 'POST',
+    defaultPayload: {
+      region: "us-east-1-gpu-cluster",
+      requestType: "telemetry_snapshot"
+    }
+  },
+  activeJobs: {
+    // Fetches the list of running training jobs
+    url: 'https://jsonplaceholder.typicode.com/posts', 
+    method: 'POST',
+    defaultPayload: {
+      status: "running",
+      limit: 5
+    }
+  },
+  infrastructure: {
+    // Fetches Redis and MinIO specific stats (Right side panel)
+    url: 'https://jsonplaceholder.typicode.com/posts',
+    method: 'POST',
+    defaultPayload: {
+      service: "infrastructure_monitor",
+      metrics: ["redis_memory", "minio_bandwidth", "est_completion"]
+    }
+  }
+};
+
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
     id: 'dashboard',
-    name: 'Command Center',
+    name: 'Dashboard',
     description: 'Cluster overview and telemetry',
     url: 'internal:dashboard',
     icon: <LayoutDashboard size={20} />,
