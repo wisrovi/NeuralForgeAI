@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Presentation, Hexagon, Star, ChevronDown } from 'lucide-react';
-import { Microservice } from '../types';
+import { Microservice, UserRole } from '../types';
 import { APP_NAME } from '../constants';
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ interface SidebarProps {
   onStartPresentation: () => void;
   favoriteIds: string[];
   onToggleFavorite: (id: string) => void;
+  userRole: UserRole;
 }
 
 // Simple hash function to simulate stable random status per service
@@ -29,7 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   toggleSidebar,
   onStartPresentation,
   favoriteIds,
-  onToggleFavorite
+  onToggleFavorite,
+  userRole
 }) => {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(true);
 
@@ -197,10 +199,12 @@ const Sidebar: React.FC<SidebarProps> = ({
             WR
           </div>
           <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">System Admin</p>
-            <p className="text-xs text-green-500 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              Online
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+               {userRole === 'admin' ? 'System Admin' : 'Guest User'}
+            </p>
+            <p className={`text-xs flex items-center gap-1 ${userRole === 'admin' ? 'text-green-500' : 'text-gray-500'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${userRole === 'admin' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+              {userRole === 'admin' ? 'Full Access' : 'Read Only'}
             </p>
           </div>
         </div>

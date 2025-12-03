@@ -10,7 +10,7 @@ import CommandPalette from './components/CommandPalette';
 import TerminalWidget from './components/TerminalWidget';
 import ApiDocsView from './components/ApiDocsView';
 import { DEFAULT_MICROSERVICES } from './constants';
-import { Microservice } from './types';
+import { Microservice, UserRole } from './types';
 
 const App: React.FC = () => {
   // Application Modes
@@ -22,6 +22,9 @@ const App: React.FC = () => {
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   
+  // Role State - Default to Guest as requested
+  const [userRole, setUserRole] = useState<UserRole>('guest');
+
   // Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   
@@ -49,6 +52,7 @@ const App: React.FC = () => {
         // Merge saved data with default constants to ensure new default items (like Dashboard) appear
         return DEFAULT_MICROSERVICES.map(def => {
           const savedService = parsed.find((p: any) => p.id === def.id);
+          // Preserve the default metadata (icon, minRole) but use saved URL
           return savedService ? { ...def, url: savedService.url } : def;
         });
       } catch (e) {
@@ -58,6 +62,20 @@ const App: React.FC = () => {
     }
     return DEFAULT_MICROSERVICES;
   });
+
+  // Filter Services based on Role
+  const visibleServices = services.filter(s => {
+    if (userRole === 'admin') return true;
+    return s.minRole !== 'admin';
+  });
+
+  // Redirect if active service becomes hidden due to role change
+  useEffect(() => {
+    const currentService = services.find(s => s.id === activeServiceId);
+    if (currentService && currentService.minRole === 'admin' && userRole !== 'admin') {
+      setActiveServiceId('dashboard');
+    }
+  }, [userRole, activeServiceId, services]);
 
   // Handle Splash Screen Timer
   useEffect(() => {
@@ -154,7 +172,7 @@ const App: React.FC = () => {
       <CommandPalette 
         isOpen={showCommandPalette} 
         onClose={() => setShowCommandPalette(false)}
-        services={services}
+        services={visibleServices}
         onSelectService={setActiveServiceId}
         toggleTheme={toggleTheme}
         toggleTerminal={() => setShowTerminal(prev => !prev)}
@@ -171,7 +189,7 @@ const App: React.FC = () => {
         
         {/* Navigation Sidebar */}
         <Sidebar 
-          items={services}
+          items={visibleServices}
           activeServiceId={activeServiceId}
           onSelectService={setActiveServiceId}
           isOpen={isSidebarOpen}
@@ -179,6 +197,7 @@ const App: React.FC = () => {
           onStartPresentation={() => setShowPresentation(true)}
           favoriteIds={favoriteIds}
           onToggleFavorite={handleToggleFavorite}
+          userRole={userRole}
         />
 
         {/* Main Content Area */}
@@ -203,6 +222,8 @@ const App: React.FC = () => {
                 geminiEnabled={geminiEnabled}
                 onToggleGemini={handleToggleGemini}
                 onResetDefaults={handleResetDefaults}
+                userRole={userRole}
+                onChangeUserRole={setUserRole}
               />
             ) : activeService.id === 'dashboard' ? (
               <DashboardHome />
