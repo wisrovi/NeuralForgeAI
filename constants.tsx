@@ -11,7 +11,8 @@ import {
   Brain,
   HardDrive,
   LayoutDashboard,
-  BookOpen
+  BookOpen,
+  FolderOpen
 } from 'lucide-react';
 import { Microservice } from './types';
 
@@ -31,6 +32,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'REST API documentation for orchestration',
     url: 'internal:docs',
     icon: <BookOpen size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'training-monitor',
@@ -38,6 +40,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'Real-time loss curves and GPU utilization metrics',
     url: 'https://en.wikipedia.org/wiki/Data_visualization', 
     icon: <Activity size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'mlflow',
@@ -52,6 +55,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'Object storage for datasets and model weights',
     url: 'about:blank',
     icon: <HardDrive size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'redis',
@@ -61,11 +65,11 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     icon: <Layers size={20} />,
   },
   {
-    id: 'workers',
-    name: 'Compute Nodes',
-    description: 'Manage remote GPU workers and clusters',
+    id: 'datasets',
+    name: 'Datasets',
+    description: 'File Browser for Training Data management',
     url: 'about:blank',
-    icon: <Server size={20} />,
+    icon: <FolderOpen size={20} />,
   },
   {
     id: 'genetic-opt',
@@ -73,6 +77,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'Hyperparameter tuning with evolutionary algorithms',
     url: 'about:blank',
     icon: <Brain size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'users',
@@ -80,6 +85,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'RBAC for data scientists and engineers',
     url: 'https://jsonplaceholder.typicode.com/users',
     icon: <Users size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'settings',
