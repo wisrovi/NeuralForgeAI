@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    image: wisrovi/neuralforgeai:latest
+    ports:
+      - "5810:4173"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - .env
