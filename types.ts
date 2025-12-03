@@ -15,3 +15,18 @@ export interface ThemeContextType {
   isDarkMode: boolean;
   toggleTheme: () => void;
 }
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'dev';
+  avatar?: string;
+}
+
+export interface ProjectDefinition {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+}

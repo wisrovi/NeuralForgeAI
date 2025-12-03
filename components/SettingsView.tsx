@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Microservice, UserRole } from '../types';
-import { DEVELOPER_PROFILE } from '../constants';
 import { 
   Save, 
   Cpu, 
   Globe, 
   User, 
-  Linkedin, 
   RotateCcw,
   CheckCircle,
   Sparkles,
@@ -33,7 +31,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   userRole,
   onChangeUserRole
 }) => {
-  const [activeTab, setActiveTab] = useState<'platform' | 'intelligence' | 'about'>('platform');
+  const [activeTab, setActiveTab] = useState<'platform' | 'intelligence'>('platform');
   const [localServices, setLocalServices] = useState<Microservice[]>(services);
   const [hasChanges, setHasChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
@@ -53,12 +51,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto pb-10">
+    <div className="w-full max-w-5xl mx-auto pb-10 animate-fade-in-up">
       
       {/* Settings Header */}
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">System Configuration</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h2>
           <p className="text-gray-500 dark:text-gray-400">Manage microservice connections, AI integration, and platform details.</p>
         </div>
 
@@ -109,20 +107,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           {activeTab === 'intelligence' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600 dark:bg-purple-400" />}
         </button>
-
-        <button
-          onClick={() => setActiveTab('about')}
-          className={`px-4 py-3 font-medium text-sm transition-colors relative ${
-            activeTab === 'about' 
-              ? 'text-emerald-600 dark:text-emerald-400' 
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <User size={18} /> About Developer
-          </div>
-          {activeTab === 'about' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 dark:bg-emerald-400" />}
-        </button>
       </div>
 
       {/* Content Area */}
@@ -152,7 +136,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
                 
                 <div className="space-y-4">
-                  {localServices.filter(s => s.id !== 'settings').map((service) => (
+                  {localServices.filter(s => s.id !== 'settings' && s.id !== 'about').map((service) => (
                     <div key={service.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
                       <div className="md:col-span-4 flex items-center gap-3">
                         <div className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm text-gray-600 dark:text-gray-300">
@@ -268,73 +252,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {/* === ABOUT DEVELOPER === */}
-        {activeTab === 'about' && (
-          <div className="relative overflow-hidden">
-            {/* Background Decoration */}
-            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-emerald-500 to-teal-600 opacity-90"></div>
-            
-            <div className="relative px-8 pt-16 pb-8">
-              <div className="flex flex-col md:flex-row gap-6">
-                
-                {/* Profile Image / Avatar */}
-                <div className="shrink-0 flex justify-center md:justify-start">
-                  <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-900 bg-gray-200 dark:bg-gray-800 shadow-xl flex items-center justify-center overflow-hidden">
-                    {DEVELOPER_PROFILE.avatarUrl ? (
-                      <img 
-                        src={DEVELOPER_PROFILE.avatarUrl} 
-                        alt={DEVELOPER_PROFILE.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={64} className="text-gray-400" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 pt-2 text-center md:text-left">
-                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{DEVELOPER_PROFILE.name}</h2>
-                   <p className="text-emerald-600 dark:text-emerald-400 font-medium text-lg mb-4">{DEVELOPER_PROFILE.title}</p>
-                   
-                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl mb-6">
-                      {DEVELOPER_PROFILE.bio}
-                   </p>
-
-                   <div className="flex flex-wrap justify-center md:justify-start gap-4">
-                      <a 
-                        href={DEVELOPER_PROFILE.linkedin}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 px-5 py-2.5 bg-[#0077b5] hover:bg-[#006396] text-white rounded-lg transition-all shadow-md hover:shadow-lg"
-                      >
-                        <Linkedin size={18} />
-                        <span>Connect on LinkedIn</span>
-                      </a>
-                      
-                      <div className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <Globe size={18} />
-                        <span>{DEVELOPER_PROFILE.location}</span>
-                      </div>
-                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-black/20 p-8 border-t border-gray-100 dark:border-gray-800">
-              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Project Contributions</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {['Microservices', 'React Architecture', 'UI/UX Design', 'System Integration'].map((skill) => (
-                  <div key={skill} className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    {skill}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
 
