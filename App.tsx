@@ -34,6 +34,12 @@ const App: React.FC = () => {
     return saved === 'true';
   });
 
+  // Favorites State
+  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('omni_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Dynamic Services Configuration State (Persisted)
   const [services, setServices] = useState<Microservice[]>(() => {
     const saved = localStorage.getItem('omni_services_config');
@@ -103,6 +109,17 @@ const App: React.FC = () => {
     localStorage.setItem('omni_gemini_enabled', String(enabled));
   };
 
+  // Toggle Favorites
+  const handleToggleFavorite = (id: string) => {
+    setFavoriteIds(prev => {
+      const newFavorites = prev.includes(id) 
+        ? prev.filter(favId => favId !== id)
+        : [...prev, id];
+      localStorage.setItem('omni_favorites', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
+  };
+
   // Handle Screen Size for Sidebar
   useEffect(() => {
     const handleResize = () => {
@@ -160,6 +177,8 @@ const App: React.FC = () => {
           isOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
           onStartPresentation={() => setShowPresentation(true)}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={handleToggleFavorite}
         />
 
         {/* Main Content Area */}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ChevronLeft, ChevronRight, Presentation, Hexagon } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Presentation, Hexagon, Star, ChevronDown } from 'lucide-react';
 import { Microservice } from '../types';
 import { APP_NAME } from '../constants';
 
@@ -10,6 +10,8 @@ interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
   onStartPresentation: () => void;
+  favoriteIds: string[];
+  onToggleFavorite: (id: string) => void;
 }
 
 // Simple hash function to simulate stable random status per service
@@ -25,8 +27,77 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectService, 
   isOpen, 
   toggleSidebar,
-  onStartPresentation
+  onStartPresentation,
+  favoriteIds,
+  onToggleFavorite
 }) => {
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(true);
+
+  const favoriteItems = items.filter(item => favoriteIds.includes(item.id));
+  const otherItems = items.filter(item => !favoriteIds.includes(item.id));
+
+  // Helper to render a service item
+  const renderItem = (item: Microservice) => {
+    const isActive = activeServiceId === item.id;
+    const isFav = favoriteIds.includes(item.id);
+    const status = getServiceStatus(item.id);
+
+    return (
+      <button
+        key={item.id}
+        onClick={() => onSelectService(item.id)}
+        className={`
+          w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative
+          ${isActive 
+            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
+            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
+          }
+        `}
+        title={!isOpen ? item.name : ''}
+      >
+        <div className="relative shrink-0">
+          <span className={`${!isActive && 'group-hover:scale-110 transition-transform'}`}>
+            {item.icon}
+          </span>
+          {/* Health Dot */}
+          {isOpen && status === 'online' && (
+            <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-900 bg-green-500 ${!isActive ? 'opacity-70' : ''}`}></span>
+          )}
+          {isOpen && status === 'error' && (
+            <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-900 bg-red-500 ${!isActive ? 'opacity-70' : ''}`}></span>
+          )}
+        </div>
+        
+        <span className={`
+          font-medium whitespace-nowrap transition-all duration-300 origin-left flex-1 text-left
+          ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 w-0 overflow-hidden'}
+        `}>
+          {item.name}
+        </span>
+
+        {/* Star Action (Only visible when open) */}
+        {isOpen && (
+          <div 
+            role="button"
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id); }}
+            className={`
+              p-1 rounded-md hover:bg-white/20 transition-colors
+              ${isFav ? 'text-yellow-300 opacity-100' : 'text-gray-400 opacity-0 group-hover:opacity-100'}
+            `}
+            aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Star size={16} fill={isFav ? "currentColor" : "none"} />
+          </div>
+        )}
+
+        {/* Active Indicator Dot (Only when collapsed) */}
+        {!isOpen && isActive && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full" />
+        )}
+      </button>
+    );
+  };
+
   return (
     <aside 
       className={`
@@ -57,50 +128,47 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
-        {items.map((item) => {
-          const isActive = activeServiceId === item.id;
-          const status = getServiceStatus(item.id);
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectService(item.id)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative
-                ${isActive 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-                }
-              `}
-              title={!isOpen ? item.name : ''}
-            >
-              <div className="relative shrink-0">
-                <span className={`${!isActive && 'group-hover:scale-110 transition-transform'}`}>
-                  {item.icon}
-                </span>
-                {/* Health Dot */}
-                {isOpen && status === 'online' && (
-                  <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-900 bg-green-500 ${!isActive ? 'opacity-70' : ''}`}></span>
-                )}
-                {isOpen && status === 'error' && (
-                  <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border border-white dark:border-gray-900 bg-red-500 ${!isActive ? 'opacity-70' : ''}`}></span>
-                )}
+        
+        {/* === FAVORITES SECTION === */}
+        {favoriteItems.length > 0 && (
+          <div className="mb-4">
+            {isOpen ? (
+              // Open State: Header with Collapse
+              <div 
+                className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
+              >
+                <div className="flex items-center gap-2">
+                  <Star size={12} className="text-yellow-500" fill="currentColor" />
+                  Favorites
+                </div>
+                <ChevronDown size={14} className={`transition-transform duration-200 ${isFavoritesOpen ? 'rotate-0' : '-rotate-90'}`} />
               </div>
-              
-              <span className={`
-                font-medium whitespace-nowrap transition-all duration-300 origin-left flex-1 text-left
-                ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 w-0 overflow-hidden'}
-              `}>
-                {item.name}
-              </span>
+            ) : (
+              // Collapsed State: Just spacing/separator logic handled below
+              <div className="mb-2" />
+            )}
 
-              {/* Active Indicator Dot (Only when collapsed) */}
-              {!isOpen && isActive && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-400 rounded-full" />
-              )}
-            </button>
-          );
-        })}
+            <div className={`space-y-1 transition-all duration-300 overflow-hidden ${isFavoritesOpen || !isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              {favoriteItems.map(renderItem)}
+            </div>
+            
+            {/* Visual Divider */}
+            <div className="my-4 mx-3 border-b border-gray-100 dark:border-gray-800"></div>
+          </div>
+        )}
+
+        {/* === MAIN MENU SECTION === */}
+        {favoriteItems.length > 0 && isOpen && (
+          <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            Menu
+          </div>
+        )}
+        
+        <div className="space-y-1">
+          {otherItems.map(renderItem)}
+        </div>
+
       </nav>
 
       {/* Footer / Presentation Mode */}
