@@ -9,8 +9,12 @@ import PresentationMode from './components/PresentationMode';
 import CommandPalette from './components/CommandPalette';
 import TerminalWidget from './components/TerminalWidget';
 import ApiDocsView from './components/ApiDocsView';
-import { DEFAULT_MICROSERVICES } from './constants';
-import { Microservice, UserRole } from './types';
+import LaunchTrainingView from './components/LaunchTrainingView'; // Renamed import
+import UserManagementView from './components/UserManagementView'; // New import
+import ProjectManagementView from './components/ProjectManagementView'; // New import
+import AboutView from './components/AboutView';
+import { DEFAULT_MICROSERVICES, DEFAULT_USERS, DEFAULT_PROJECTS } from './constants';
+import { Microservice, UserRole, UserProfile, ProjectDefinition } from './types';
 
 const App: React.FC = () => {
   // Application Modes
@@ -22,7 +26,7 @@ const App: React.FC = () => {
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   
-  // Role State - Default to Guest as requested
+  // Role State
   const [userRole, setUserRole] = useState<UserRole>('guest');
 
   // Sidebar State
@@ -43,16 +47,43 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // === DATA REGISTRIES (Users & Projects) ===
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    const saved = localStorage.getItem('omni_users');
+    return saved ? JSON.parse(saved) : DEFAULT_USERS;
+  });
+
+  const [projects, setProjects] = useState<ProjectDefinition[]>(() => {
+    const saved = localStorage.getItem('omni_projects');
+    return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
+  });
+
+  // Persist Users/Projects on change
+  useEffect(() => {
+    localStorage.setItem('omni_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('omni_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  // Handlers for Data Mutation
+  const handleAddUser = (user: UserProfile) => setUsers(prev => [...prev, user]);
+  const handleUpdateUser = (updated: UserProfile) => setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+  const handleDeleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
+
+  const handleAddProject = (project: ProjectDefinition) => setProjects(prev => [...prev, project]);
+  const handleUpdateProject = (updated: ProjectDefinition) => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+  const handleDeleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
+
   // Dynamic Services Configuration State (Persisted)
   const [services, setServices] = useState<Microservice[]>(() => {
     const saved = localStorage.getItem('omni_services_config');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Merge saved data with default constants to ensure new default items (like Dashboard) appear
         return DEFAULT_MICROSERVICES.map(def => {
           const savedService = parsed.find((p: any) => p.id === def.id);
-          // Preserve the default metadata (icon, minRole) but use saved URL
           return savedService ? { ...def, url: savedService.url } : def;
         });
       } catch (e) {
@@ -81,7 +112,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 2800); // slightly longer than animation to feel "settled"
+    }, 2800); 
     return () => clearTimeout(timer);
   }, []);
 
@@ -121,13 +152,11 @@ const App: React.FC = () => {
     localStorage.removeItem('omni_services_config');
   };
 
-  // Persist Gemini Toggle
   const handleToggleGemini = (enabled: boolean) => {
     setGeminiEnabled(enabled);
     localStorage.setItem('omni_gemini_enabled', String(enabled));
   };
 
-  // Toggle Favorites
   const handleToggleFavorite = (id: string) => {
     setFavoriteIds(prev => {
       const newFavorites = prev.includes(id) 
@@ -138,7 +167,6 @@ const App: React.FC = () => {
     });
   };
 
-  // Handle Screen Size for Sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -155,20 +183,13 @@ const App: React.FC = () => {
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // Get current service object
   const activeService = services.find(s => s.id === activeServiceId) || services[0];
 
   return (
     <>
-      {/* 1. Splash Screen Overlay */}
       {showSplash && <SplashScreen />}
+      {showPresentation && <PresentationMode onClose={() => setShowPresentation(false)} />}
 
-      {/* 2. Presentation Mode Overlay */}
-      {showPresentation && (
-        <PresentationMode onClose={() => setShowPresentation(false)} />
-      )}
-
-      {/* 3. Command Palette Modal */}
       <CommandPalette 
         isOpen={showCommandPalette} 
         onClose={() => setShowCommandPalette(false)}
@@ -178,16 +199,13 @@ const App: React.FC = () => {
         toggleTerminal={() => setShowTerminal(prev => !prev)}
       />
 
-      {/* 4. Terminal Widget */}
       <TerminalWidget 
         isOpen={showTerminal} 
         onClose={() => setShowTerminal(false)} 
       />
 
-      {/* 5. Main App Layout */}
       <div className={`flex h-screen w-full bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100 transition-colors duration-300 ${showSplash ? 'opacity-0' : 'opacity-100'}`}>
         
-        {/* Navigation Sidebar */}
         <Sidebar 
           items={visibleServices}
           activeServiceId={activeServiceId}
@@ -200,13 +218,7 @@ const App: React.FC = () => {
           userRole={userRole}
         />
 
-        {/* Main Content Area */}
-        <div 
-          className={`
-            flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300
-            ${isSidebarOpen ? 'ml-64' : 'ml-20'}
-          `}
-        >
+        <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
           <Header 
             isDarkMode={isDarkMode} 
             toggleTheme={toggleTheme}
@@ -229,6 +241,24 @@ const App: React.FC = () => {
               <DashboardHome />
             ) : activeService.id === 'api-docs' ? (
               <ApiDocsView />
+            ) : activeService.id === 'launch-training' ? (
+              <LaunchTrainingView users={users} projects={projects} />
+            ) : activeService.id === 'users' ? (
+              <UserManagementView 
+                users={users} 
+                onAddUser={handleAddUser}
+                onUpdateUser={handleUpdateUser}
+                onDeleteUser={handleDeleteUser}
+              />
+            ) : activeService.id === 'projects' ? (
+              <ProjectManagementView 
+                projects={projects}
+                onAddProject={handleAddProject}
+                onUpdateProject={handleUpdateProject}
+                onDeleteProject={handleDeleteProject}
+              />
+            ) : activeService.id === 'about' ? (
+              <AboutView />
             ) : (
               <ServiceViewer service={activeService} />
             )}

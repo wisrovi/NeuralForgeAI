@@ -12,44 +12,79 @@ import {
   HardDrive,
   LayoutDashboard,
   BookOpen,
-  FolderOpen
+  FolderOpen,
+  Rocket, // Changed from UploadCloud to Rocket
+  Info,
+  Library
 } from 'lucide-react';
-import { Microservice } from './types';
+import { Microservice, UserProfile, ProjectDefinition } from './types';
 
 export const APP_NAME = "NeuroForge AI";
 
 // === API CONFIGURATION ===
-// Edit these URLs to point to your internal backend.
-// The Dashboard will send a POST request to these endpoints to retrieve metrics.
+
+export const UPLOAD_API_CONFIG = {
+  url: 'https://jsonplaceholder.typicode.com/posts',
+  method: 'POST'
+};
+
+// Dashboard API Configuration
 export const DASHBOARD_API_CONFIG = {
-  telemetry: {
-    // Fetches top-level cards (active workers, gpu util, etc)
-    url: 'https://jsonplaceholder.typicode.com/posts', 
+  activeWorkers: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=workers',
     method: 'POST',
-    defaultPayload: {
-      region: "us-east-1-gpu-cluster",
-      requestType: "telemetry_snapshot"
-    }
+    payload: { query: "count_active_nodes" }
+  },
+  gpuUtil: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=gpu',
+    method: 'POST',
+    payload: { query: "avg_gpu_utilization" }
+  },
+  queueDepth: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=queue',
+    method: 'POST',
+    payload: { query: "redis_queue_length" }
+  },
+  storageUsed: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=storage',
+    method: 'POST',
+    payload: { query: "minio_bucket_size" }
   },
   activeJobs: {
-    // Fetches the list of running training jobs
-    url: 'https://jsonplaceholder.typicode.com/posts', 
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=jobs_list',
     method: 'POST',
-    defaultPayload: {
-      status: "running",
-      limit: 5
-    }
+    payload: { status: "running", limit: 5 }
   },
-  infrastructure: {
-    // Fetches Redis and MinIO specific stats (Right side panel)
-    url: 'https://jsonplaceholder.typicode.com/posts',
+  redisMemory: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=redis_mem',
     method: 'POST',
-    defaultPayload: {
-      service: "infrastructure_monitor",
-      metrics: ["redis_memory", "minio_bandwidth", "est_completion"]
-    }
+    payload: { instance: "primary_cache" }
+  },
+  minioBandwidth: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=minio_bw',
+    method: 'POST',
+    payload: { bucket: "training_data" }
+  },
+  estCompletion: {
+    url: 'https://jsonplaceholder.typicode.com/posts?metric=eta',
+    method: 'POST',
+    payload: { job_ids: "active" }
   }
 };
+
+// === DEFAULT DATA ===
+
+export const DEFAULT_USERS: UserProfile[] = [
+  { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@neuroforge.ai', role: 'admin' },
+  { id: 'u2', name: 'Guest Researcher', email: 'guest@neuroforge.ai', role: 'dev' },
+  { id: 'u3', name: 'AI Worker Bot', email: 'bot-01@neuroforge.ai', role: 'dev' },
+];
+
+export const DEFAULT_PROJECTS: ProjectDefinition[] = [
+  { id: 'p1', name: 'YOLOv8-Base-Coco', description: 'Baseline training on COCO 2017 dataset', createdAt: '2023-11-01' },
+  { id: 'p2', name: 'Industrial-Defect-V2', description: 'Fine-tuning for manufacturing surface defects', createdAt: '2024-01-15' },
+  { id: 'p3', name: 'Traffic-Sign-Gen-Opt', description: 'Genetic optimization for traffic sign detection', createdAt: '2024-02-20' },
+];
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
@@ -58,6 +93,21 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'Cluster overview and telemetry',
     url: 'internal:dashboard',
     icon: <LayoutDashboard size={20} />,
+  },
+  {
+    id: 'launch-training', // Renamed ID
+    name: 'Launch Training', // Renamed Name
+    description: 'Deploy new experiments to the cluster',
+    url: 'internal:launch',
+    icon: <Rocket size={20} />, // Changed Icon
+  },
+  {
+    id: 'projects', // New Service
+    name: 'Project Registry',
+    description: 'Manage experiment namespaces',
+    url: 'internal:projects',
+    icon: <Library size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'api-docs',
@@ -115,14 +165,21 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
     id: 'users',
     name: 'Team Access',
-    description: 'RBAC for data scientists and engineers',
-    url: 'https://jsonplaceholder.typicode.com/users',
+    description: 'User Registry and Role Management',
+    url: 'internal:users', // Updated to internal view
     icon: <Users size={20} />,
     minRole: 'admin'
   },
   {
+    id: 'about',
+    name: 'About',
+    description: 'Developer profile and system info',
+    url: 'internal:about',
+    icon: <Info size={20} />,
+  },
+  {
     id: 'settings',
-    name: 'System Config',
+    name: 'Settings',
     description: 'Global API keys, Ray Tune, and env variables',
     url: 'internal:settings', 
     icon: <Settings size={20} />,
