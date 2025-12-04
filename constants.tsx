@@ -24,51 +24,53 @@ export const APP_NAME = "NeuroForge AI";
 // === API CONFIGURATION ===
 
 export const UPLOAD_API_CONFIG = {
-  url: 'https://jsonplaceholder.typicode.com/posts',
+  url: `${import.meta.env.VITE_API_URL || 'http://neuroforge-api:8000'}/posts`,
   method: 'POST'
 };
 
 // Dashboard API Configuration
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=workers',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "count_active_nodes" }
+    payload: { metric: "workers", query: "count_active_nodes" }
   },
   gpuUtil: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=gpu',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "avg_gpu_utilization" }
+    payload: { metric: "gpu", query: "avg_gpu_utilization" }
   },
   queueDepth: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=queue',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "redis_queue_length" }
+    payload: { metric: "queue", query: "redis_queue_length" }
   },
   storageUsed: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=storage',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "minio_bucket_size" }
+    payload: { metric: "storage", query: "minio_bucket_size" }
   },
   activeJobs: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=jobs_list',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { status: "running", limit: 5 }
+    payload: { metric: "jobs_list", status: "running", limit: 5 }
   },
   redisMemory: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=redis_mem',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { instance: "primary_cache" }
+    payload: { metric: "redis_mem", instance: "primary_cache" }
   },
   minioBandwidth: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=minio_bw',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { bucket: "training_data" }
+    payload: { metric: "minio_bw", bucket: "training_data" }
   },
   estCompletion: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=eta',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { job_ids: "active" }
+    payload: { metric: "eta", job_ids: "active" }
   }
 };
 
@@ -129,8 +131,29 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     id: 'mlflow',
     name: 'MLflow Tracking',
     description: 'Experiment logging, metrics, and artifact storage',
-    url: 'about:blank',
+    url: `${import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://neuroforge-api:8000/mlflow'}`,
     icon: <GitBranch size={20} />,
+  },
+  {
+    id: 'minio',
+    name: 'MinIO Storage',
+    description: 'Object storage for datasets and model weights',
+    url: `${import.meta.env.VITE_MINIO_URL || 'http://neuroforge-api:9000'}`,
+    icon: <HardDrive size={20} />,
+  },
+  {
+    id: 'redis',
+    name: 'Redis Queue',
+    description: 'Job orchestration and task scheduling status',
+    url: `${import.meta.env.VITE_REDIS_TRACKING_URL || 'http://neuroforge-api:8000/redis'}`,
+    icon: <Layers size={20} />,
+  },
+  {
+    id: 'datasets',
+    name: 'Datasets',
+    description: 'File Browser for Training Data management',
+    url: `${import.meta.env.VITE_FILEBROWSER_URL || 'http://neuroforge-api:8000/filebrowser'}`,
+    icon: <FolderOpen size={20} />,
   },
   {
     id: 'minio',

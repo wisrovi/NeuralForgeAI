@@ -1,12 +1,29 @@
 version: '3.8'
 
 services:
-  app:
+  neuroforge-api:
+    build: ./api
+    image: wisrovi/neuralforgeai_backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    
+  neuroforge-frontend:
     build: .
-    image: wisrovi/neuralforgeai:latest
+    image: wisrovi/neuralforgeai_frontend:latest
     ports:
       - "5810:4173"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - VITE_API_URL=http://neuroforge-api:8000
+      - VITE_MLFLOW_TRACKING_URI=http://neuroforge-api:8000/mlflow
+      - VITE_MINIO_URL=http://neuroforge-api:9000
+      - VITE_REDIS_TRACKING_URL=http://neuroforge-api:8000/redis
+      - VITE_FILEBROWSER_URL=http://neuroforge-api:8000/filebrowser
     env_file:
       - .env
+    depends_on:
+      - neuroforge-api
+    restart: unless-stopped
