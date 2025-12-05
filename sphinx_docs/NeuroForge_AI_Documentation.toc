@@ -1,0 +1,58 @@
+\contentsline {chapter}{Contents}{1}{chapter*.1}%
+\contentsline {chapter}{List of Figures}{3}{chapter*.2}%
+\contentsline {chapter}{List of Tables}{4}{chapter*.3}%
+\contentsline {chapter}{Listings}{5}{chapter*.4}%
+\contentsline {chapter}{\numberline {1}Executive Summary}{6}{chapter.1}%
+\contentsline {chapter}{\numberline {2}Introduction}{7}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Background}{7}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Objectives}{7}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Scope}{7}{section.2.3}%
+\contentsline {chapter}{\numberline {3}Technical Architecture}{8}{chapter.3}%
+\contentsline {section}{\numberline {3.1}System Overview}{8}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Component Architecture}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}State Management Strategy}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Service Integration Architecture}{9}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Installation Guide}{10}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Prerequisites}{10}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Local Development Setup}{10}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Clone and Install Dependencies}{10}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Environment Configuration}{10}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Running the Development Server}{11}{subsection.4.2.3}%
+\contentsline {section}{\numberline {4.3}Production Deployment}{11}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Docker Deployment}{11}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Dockerfile Analysis}{11}{subsection.4.3.2}%
+\contentsline {chapter}{\numberline {5}Configuration and Customization}{12}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Service Configuration}{12}{section.5.1}%
+\contentsline {section}{\numberline {5.2}User Role Management}{12}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Theme Customization}{12}{section.5.3}%
+\contentsline {chapter}{\numberline {6}Usage Examples}{14}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Dashboard Navigation}{14}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Project Management}{14}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Training Launch}{14}{section.6.3}%
+\contentsline {chapter}{\numberline {7}Performance Metrics}{16}{chapter.7}%
+\contentsline {section}{\numberline {7.1}System Monitoring}{16}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Performance Optimization}{16}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Expected Performance}{16}{section.7.3}%
+\contentsline {chapter}{\numberline {8}Best Practices and Troubleshooting}{17}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Development Best Practices}{17}{section.8.1}%
+\contentsline {subsection}{\numberline {8.1.1}Code Organization}{17}{subsection.8.1.1}%
+\contentsline {subsection}{\numberline {8.1.2}State Management}{17}{subsection.8.1.2}%
+\contentsline {section}{\numberline {8.2}Common Issues and Solutions}{17}{section.8.2}%
+\contentsline {subsection}{\numberline {8.2.1}Build Failures}{17}{subsection.8.2.1}%
+\contentsline {subsection}{\numberline {8.2.2}Runtime Issues}{17}{subsection.8.2.2}%
+\contentsline {subsection}{\numberline {8.2.3}Performance Issues}{17}{subsection.8.2.3}%
+\contentsline {section}{\numberline {8.3}Debugging Techniques}{18}{section.8.3}%
+\contentsline {chapter}{\numberline {9}Conclusions and Future Work}{19}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Project Summary}{19}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Key Achievements}{19}{section.9.2}%
+\contentsline {section}{\numberline {9.3}Future Enhancements}{19}{section.9.3}%
+\contentsline {subsection}{\numberline {9.3.1}Short-term Goals}{19}{subsection.9.3.1}%
+\contentsline {subsection}{\numberline {9.3.2}Long-term Vision}{19}{subsection.9.3.2}%
+\contentsline {section}{\numberline {9.4}Technical Debt and Improvements}{20}{section.9.4}%
+\contentsline {chapter}{\numberline {10}Bibliography}{21}{chapter.10}%
+\contentsline {chapter}{Bibliography}{22}{chapter*.9}%
+\contentsline {chapter}{\numberline {A}Advanced Configuration}{23}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Custom Service Integration}{23}{section.A.1}%
+\contentsline {section}{\numberline {A.2}Environment Variables Reference}{23}{section.A.2}%
+\contentsline {section}{\numberline {A.3}Docker Compose Configuration}{23}{section.A.3}%
+\contentsline {section}{\numberline {A.4}API Integration Examples}{24}{section.A.4}%
