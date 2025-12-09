@@ -169,7 +169,7 @@ const DashboardHome: React.FC = () => {
       {/* 1. Metric Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
-          title="Active Workers" 
+          title="The Hive (Workers)" 
           value={data.activeWorkers} 
           subValue={data.workerTrend} 
           icon={<Server size={20} className="text-blue-500" />}
