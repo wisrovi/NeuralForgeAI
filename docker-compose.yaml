@@ -2,16 +2,21 @@ version: '3.8'
 
 services:    
   neuroforge-frontend:
-    build: .
+    build: 
+      context: .
+      args:
+        - VITE_MLFLOW_TRACKING_URI=http://192.168.1.84:23435
+        - VITE_REDIS_TRACKING_URL=http://192.168.1.84:23439/
+        - VITE_FILEBROWSER_URL=http://192.168.1.84:23443/files/
     image: wisrovi/w_darwin_ops-frontend:latest
     ports:
       - "5810:4173"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - VITE_API_URL=http://neuroforge-api:8000
-      - MLFLOW_TRACKING_URI=http://192.168.1.84:23435
-      - REDIS_TRACKING_URL=http://192.168.1.84:23439/
-      - FILEBROWSER_URL=http://192.168.1.84:23443/files/
+      - VITE_MLFLOW_TRACKING_URI=http://192.168.1.84:23435
+      - VITE_REDIS_TRACKING_URL=http://192.168.1.84:23439/
+      - VITE_FILEBROWSER_URL=http://192.168.1.84:23443/files/
     env_file:
       - .env
 

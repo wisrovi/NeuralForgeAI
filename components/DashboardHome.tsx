@@ -98,15 +98,19 @@ const DashboardHome: React.FC = () => {
       const eSeed = completionData.id || 7;
 
       // Use real jobs data from API
-      const apiJobs = jobsData.jobs || [];
-      const newJobs = apiJobs.map((job, index) => ({
-        id: parseInt(job.id.replace('job_', '')) || (jobsData.id || 200) + index,
-        name: job.name || `Training-Job-${index + 1}`,
-        worker: job.worker || `Worker-0${index + 1}`,
-        epoch: job.epoch || `${Math.floor(Math.random() * 50) + 1}/100`,
-        progress: job.progress || Math.floor(Math.random() * 100),
-        map: job.map || (0.3 + Math.random() * 0.4).toFixed(3)
-      }));
+      console.log('Jobs API Response:', jobsData);
+      const apiJobs = jobsData.jobs || jobsData || [];
+      const newJobs = (Array.isArray(apiJobs) ? apiJobs : []).map((job, index) => {
+        const jobId = typeof job.id === 'string' ? job.id.replace('job_', '') : job.id;
+        return {
+          id: parseInt(jobId) || (jobsData.id || 200) + index,
+          name: job.name || `Training-Job-${index + 1}`,
+          worker: job.worker || `Worker-0${index + 1}`,
+          epoch: job.epoch || `${Math.floor(Math.random() * 50) + 1}/100`,
+          progress: job.progress || Math.floor(Math.random() * 100),
+          map: job.map || (0.3 + Math.random() * 0.4).toFixed(3)
+        };
+      });
 
       setData({
         activeWorkers: workersData.value ? `${workersData.value}/16` : `${(wSeed % 16) + 1}/16`,
@@ -170,7 +174,7 @@ const DashboardHome: React.FC = () => {
       {/* 1. Metric Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard 
-          title="Active Workers" 
+          title="The Hive (Workers)" 
           value={data.activeWorkers} 
           subValue={data.workerTrend} 
           icon={<Server size={20} className="text-blue-500" />}
@@ -214,7 +218,7 @@ const DashboardHome: React.FC = () => {
               Array(3).fill(0).map((_, i) => (
                 <div key={i} className="h-20 bg-gray-50 dark:bg-gray-800/50 rounded-lg animate-pulse" />
               ))
-            ) : (
+            ) : data.activeJobs.length > 0 ? (
               data.activeJobs.map((job) => (
                 <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800 group hover:border-blue-500/30 transition-colors">
                   <div className="flex items-center gap-4">
@@ -236,6 +240,10 @@ const DashboardHome: React.FC = () => {
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p>No active training jobs found</p>
+              </div>
             )}
           </div>
         </div>

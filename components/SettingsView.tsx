@@ -9,7 +9,9 @@ import {
   CheckCircle,
   Sparkles,
   Shield,
-  ShieldAlert
+  ShieldAlert,
+  Loader2,
+  Check
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -34,20 +36,27 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   const [activeTab, setActiveTab] = useState<'platform' | 'intelligence'>('platform');
   const [localServices, setLocalServices] = useState<Microservice[]>(services);
   const [hasChanges, setHasChanges] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const handleUrlChange = (id: string, newUrl: string) => {
     const updated = localServices.map(s => s.id === id ? { ...s, url: newUrl } : s);
     setLocalServices(updated);
     setHasChanges(true);
-    setSaveStatus('idle');
+    if (saveStatus !== 'idle') setSaveStatus('idle');
   };
 
   const handleSave = () => {
-    onUpdateServices(localServices);
-    setHasChanges(false);
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
+    setSaveStatus('saving');
+    
+    // Simulate network/processing delay for better UX
+    setTimeout(() => {
+        onUpdateServices(localServices);
+        setHasChanges(false);
+        setSaveStatus('saved');
+        
+        // Reset back to idle after display
+        setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 800);
   };
 
   return (
@@ -166,24 +175,37 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
 
                 <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-800">
-                  {saveStatus === 'saved' && (
-                    <span className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium animate-fade-in">
-                      <CheckCircle size={16} /> Configuration Saved
-                    </span>
-                  )}
                   <button
                     onClick={handleSave}
-                    disabled={!hasChanges}
+                    disabled={(!hasChanges && saveStatus === 'idle') || saveStatus === 'saving' || saveStatus === 'saved'}
                     className={`
-                      flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all
-                      ${hasChanges 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30' 
-                        : 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                      flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 transform
+                      ${saveStatus === 'saved' 
+                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 scale-105' 
+                        : saveStatus === 'saving'
+                          ? 'bg-blue-600 text-white cursor-wait opacity-90'
+                          : hasChanges
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30 hover:-translate-y-0.5' 
+                            : 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                       }
                     `}
                   >
-                    <Save size={18} />
-                    Save Changes
+                    {saveStatus === 'saving' ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : saveStatus === 'saved' ? (
+                      <>
+                        <Check size={18} className="animate-bounce" />
+                        <span>Changes Saved</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={18} />
+                        <span>Save Changes</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </>
