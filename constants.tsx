@@ -24,9 +24,15 @@ export const APP_NAME = "WDarwin Ops";
 // Helper for safe environment variable access
 const getEnv = (key: string, fallback: string) => {
   try {
-    const env = (import.meta as any).env;
-    return env?.[key] || fallback;
-  } catch {
+    // Verificación defensiva para evitar el error "Cannot read properties of undefined"
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      // @ts-ignore
+      return import.meta.env[key] || fallback;
+    }
+    return fallback;
+  } catch (e) {
+    console.warn(`Environment variable access failed for ${key}, using fallback.`);
     return fallback;
   }
 };
