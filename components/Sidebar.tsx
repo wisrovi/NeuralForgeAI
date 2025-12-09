@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Presentation, Hexagon, Star, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Presentation, Dna, Star, ChevronDown } from 'lucide-react';
 import { Microservice, UserRole } from '../types';
 import { APP_NAME } from '../constants';
 
@@ -112,7 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/20">
         <div className={`flex items-center gap-3 overflow-hidden transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 w-0'}`}>
           <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg shrink-0 shadow-lg shadow-blue-500/20">
-            <Hexagon className="text-white" size={20} strokeWidth={2.5} />
+            <Dna className="text-white" size={20} strokeWidth={2.5} />
           </div>
           <span className="font-bold text-lg tracking-tight whitespace-nowrap bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-300">
             {APP_NAME}

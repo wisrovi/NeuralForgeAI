@@ -1,5 +1,4 @@
 import React from 'react';
-import { Hexagon } from 'lucide-react';
 import { APP_NAME } from '../constants';
 
 const SplashScreen: React.FC = () => {
@@ -23,7 +22,7 @@ const SplashScreen: React.FC = () => {
           <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-30 rounded-full animate-pulse-slow"></div>
           
           <div className="relative w-32 h-32 flex items-center justify-center">
-             {/* Abstract Neural Node SVG */}
+             {/* DNA Helix / Network SVG */}
              <svg viewBox="0 0 100 100" className="w-full h-full text-blue-500 animate-float drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
                <defs>
                  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -32,28 +31,23 @@ const SplashScreen: React.FC = () => {
                  </linearGradient>
                </defs>
                
-               {/* Central Hexagon */}
-               <path d="M50 20 L80 35 L80 65 L50 80 L20 65 L20 35 Z" fill="none" stroke="url(#grad1)" strokeWidth="3" />
-               <circle cx="50" cy="50" r="10" fill="url(#grad1)" />
+               {/* Left Strand */}
+               <path d="M30 10 Q 70 30 30 50 Q 70 70 30 90" fill="none" stroke="url(#grad1)" strokeWidth="4" strokeLinecap="round" />
                
-               {/* Connections */}
-               <line x1="50" y1="20" x2="50" y2="5" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="50" cy="5" r="3" fill="#60A5FA" />
+               {/* Right Strand */}
+               <path d="M70 10 Q 30 30 70 50 Q 30 70 70 90" fill="none" stroke="url(#grad1)" strokeWidth="4" strokeLinecap="round" opacity="0.7" />
                
-               <line x1="80" y1="35" x2="95" y2="25" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="95" cy="25" r="3" fill="#60A5FA" />
+               {/* Rungs */}
+               <line x1="30" y1="10" x2="70" y2="10" stroke="#60A5FA" strokeWidth="2" strokeDasharray="4 4" />
+               <line x1="50" y1="30" x2="50" y2="30" stroke="#60A5FA" strokeWidth="6" strokeLinecap="round" />
+               <line x1="30" y1="50" x2="70" y2="50" stroke="#60A5FA" strokeWidth="2" strokeDasharray="4 4" />
+               <line x1="50" y1="70" x2="50" y2="70" stroke="#60A5FA" strokeWidth="6" strokeLinecap="round" />
+               <line x1="30" y1="90" x2="70" y2="90" stroke="#60A5FA" strokeWidth="2" strokeDasharray="4 4" />
                
-               <line x1="80" y1="65" x2="95" y2="75" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="95" cy="75" r="3" fill="#60A5FA" />
-               
-               <line x1="20" y1="65" x2="5" y2="75" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="5" cy="75" r="3" fill="#60A5FA" />
-               
-               <line x1="20" y1="35" x2="5" y2="25" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="5" cy="25" r="3" fill="#60A5FA" />
-               
-               <line x1="50" y1="80" x2="50" y2="95" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-               <circle cx="50" cy="95" r="3" fill="#60A5FA" />
+               {/* Particles */}
+               <circle cx="30" cy="10" r="3" fill="#fff" />
+               <circle cx="70" cy="50" r="3" fill="#fff" />
+               <circle cx="30" cy="90" r="3" fill="#fff" />
              </svg>
           </div>
         </div>
@@ -61,10 +55,19 @@ const SplashScreen: React.FC = () => {
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-300 to-white">
           {APP_NAME}
         </h1>
-        <div className="h-1 w-24 bg-gradient-to-r from-transparent via-blue-500 to-transparent mb-4"></div>
-        <p className="text-blue-200/60 font-mono text-sm tracking-widest uppercase">
-          Initializing Neural Systems...
-        </p>
+        <div className="h-1 w-24 bg-gradient-to-r from-transparent via-blue-500 to-transparent mb-6"></div>
+        
+        {/* Explanation / Tagline */}
+        <div className="flex flex-col items-center space-y-2 text-blue-200/80 font-mono text-xs tracking-widest uppercase">
+          <div className="flex items-center gap-2">
+            <span>Evolutionary</span>
+            <span className="w-1 h-1 rounded-full bg-blue-500/50"></span>
+            <span>Architecture</span>
+            <span className="w-1 h-1 rounded-full bg-blue-500/50"></span>
+            <span>Operations</span>
+          </div>
+        </div>
+
       </div>
 
       <div className="absolute bottom-10 flex gap-2">

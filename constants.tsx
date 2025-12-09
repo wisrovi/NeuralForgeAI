@@ -13,13 +13,13 @@ import {
   LayoutDashboard,
   BookOpen,
   FolderOpen,
-  Rocket, // Changed from UploadCloud to Rocket
+  Rocket,
   Info,
   Library
 } from 'lucide-react';
 import { Microservice, UserProfile, ProjectDefinition } from './types';
 
-export const APP_NAME = "NeuroForge AI";
+export const APP_NAME = "WDarwin Ops";
 
 // === API CONFIGURATION ===
 
@@ -75,9 +75,9 @@ export const DASHBOARD_API_CONFIG = {
 // === DEFAULT DATA ===
 
 export const DEFAULT_USERS: UserProfile[] = [
-  { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@neuroforge.ai', role: 'admin' },
-  { id: 'u2', name: 'Guest Researcher', email: 'guest@neuroforge.ai', role: 'dev' },
-  { id: 'u3', name: 'AI Worker Bot', email: 'bot-01@neuroforge.ai', role: 'dev' },
+  { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@darwin-ops.ai', role: 'admin' },
+  { id: 'u2', name: 'Guest Researcher', email: 'guest@darwin-ops.ai', role: 'dev' },
+  { id: 'u3', name: 'AI Worker Bot', email: 'bot-01@darwin-ops.ai', role: 'dev' },
 ];
 
 export const DEFAULT_PROJECTS: ProjectDefinition[] = [
@@ -95,14 +95,14 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     icon: <LayoutDashboard size={20} />,
   },
   {
-    id: 'launch-training', // Renamed ID
-    name: 'Launch Training', // Renamed Name
+    id: 'launch-training',
+    name: 'Launch Training',
     description: 'Deploy new experiments to the cluster',
     url: 'internal:launch',
-    icon: <Rocket size={20} />, // Changed Icon
+    icon: <Rocket size={20} />,
   },
   {
-    id: 'projects', // New Service
+    id: 'projects',
     name: 'Project Registry',
     description: 'Manage experiment namespaces',
     url: 'internal:projects',
@@ -166,7 +166,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     id: 'users',
     name: 'Team Access',
     description: 'User Registry and Role Management',
-    url: 'internal:users', // Updated to internal view
+    url: 'internal:users',
     icon: <Users size={20} />,
     minRole: 'admin'
   },
@@ -189,7 +189,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
 export const DEVELOPER_PROFILE = {
   name: "Wisrovi Rodríguez",
   title: "Software Engineer & System Architect",
-  bio: "Specialized in AI Infrastructure and Orchestration. Creator of NeuroForge, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
+  bio: "Specialized in AI Infrastructure and Orchestration. Creator of WDarwin Ops, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
   location: "Bogotá, Colombia",
   linkedin: "https://www.linkedin.com/in/wisrovi-rodriguez/",
   linkedinSearch: "https://www.linkedin.com/in/wisrovi-rodriguez/",
@@ -198,15 +198,15 @@ export const DEVELOPER_PROFILE = {
 
 export const PRESENTATION_SLIDES = [
   {
-    title: "Welcome to NeuroForge AI",
-    subtitle: "The Next Generation of AI Training Orchestration",
-    content: "NeuroForge is a centralized command center designed to orchestrate complex YOLO model training across distributed GPU clusters. It bridges the gap between raw compute power and intelligent model evolution.",
+    title: "Welcome to WDarwin Ops",
+    subtitle: "Evolutionary Intelligence",
+    content: "An advanced orchestration platform designed for high-performance AI lifecycles. 'Darwin' represents the system's core philosophy: models are not just trained; they are evolved through genetic selection, ensuring only the fittest hyperparameters survive.",
     icon: "logo"
   },
   {
     title: "System Architecture",
     subtitle: "Centralized Brain, Distributed Muscle",
-    content: "A Hub-and-Spoke architecture where the central NeuroForge server dispatches training jobs to remote worker nodes. It ensures data consistency and unified monitoring across the entire training fleet.",
+    content: "A Hub-and-Spoke architecture where the central server dispatches training jobs to remote worker nodes (The Hive). It ensures data consistency and unified monitoring across the entire training fleet.",
     icon: "server"
   },
   {
@@ -218,7 +218,7 @@ export const PRESENTATION_SLIDES = [
   {
     title: "Genetic Algorithms",
     subtitle: "Evolutionary Hyperparameter Optimization",
-    content: "NeuroForge doesn't just train; it evolves. By applying genetic algorithms (mutation, crossover, selection), the system automatically discovers the optimal hyperparameters for your specific dataset.",
+    content: "WDarwin Ops applies biological principles to machine learning. By utilizing mutation, crossover, and selection, the system automatically discovers the optimal hyperparameters for your specific dataset.",
     icon: "dna"
   },
   {
@@ -240,7 +240,7 @@ export const PRESENTATION_SLIDES = [
     icon: "activity"
   },
   {
-    title: "Task Queue System",
+    title: "The Hive Queue",
     subtitle: "Robust Job Scheduling",
     content: "An intelligent priority queue system that handles job preemption, retries on failure, and load balancing across available GPU resources to ensure maximum cluster utilization.",
     icon: "layers"
@@ -261,7 +261,7 @@ export const PRESENTATION_SLIDES = [
 
 export const MOCK_LOGS = [
   "[SYSTEM] Initializing Ray Cluster connection...",
-  "[WORKER-01] GPU 0 allocated for Trial #4a2b9",
+  "[HIVE-01] GPU 0 allocated for Trial #4a2b9",
   "[REDIS] Queue depth: 14 jobs pending",
   "[MLFLOW] Experiment 'yolo-v8-base' created",
   "[MINIO] Downloading dataset 'coco-2017-subset.zip' (2.4GB)",
