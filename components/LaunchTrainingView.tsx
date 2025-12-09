@@ -54,7 +54,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
           return lines.some(line => regex.test(line));
         };
 
-        // Helper: Check for nested key within a parent block (YAML indentation based)
+        // Helper: Check for nested key within a parent block (YAML indentation based or Inline JSON-like)
         const hasNestedKey = (parent: string, child: string) => {
           // 1. Find parent line index
           const parentRegex = new RegExp(`^[ \\t]*"?${parent}"?[ \\t]*:`);
@@ -62,11 +62,25 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
           
           if (parentIdx === -1) return false; // Parent not found
 
-          // 2. Determine parent indentation
           const parentLine = lines[parentIdx];
+
+          // 1.5 Check for Inline Definition (e.g., train: { data: "..." } or "train": { "data": ... })
+          // We check the content after the first colon of the parent line
+          const parts = parentLine.split(':');
+          if (parts.length > 1) {
+             // Rejoin the rest in case there are colons in the value, but skip the first one which is the parent's key separator
+             const afterColon = parts.slice(1).join(':');
+             // Look for the child key followed by a colon
+             const childInlineRegex = new RegExp(`"?${child}"?[ \\t]*:`);
+             if (childInlineRegex.test(afterColon)) {
+               return true;
+             }
+          }
+
+          // 2. Determine parent indentation for Block Definition
           const parentIndent = parentLine.search(/\S/); // Index of first non-whitespace char
 
-          // 3. Scan subsequent lines
+          // 3. Scan subsequent lines for indented block content
           for (let i = parentIdx + 1; i < lines.length; i++) {
             const line = lines[i];
             
@@ -76,8 +90,6 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
             const currentIndent = line.search(/\S/);
             
             // If we hit a line with same or less indentation than parent, the block has ended
-            // (Note: This is a simplified check; JSON works differently but usually has braces. 
-            // For mixed support we assume standard indentation for YAML/readable JSON)
             if (currentIndent !== -1 && currentIndent <= parentIndent) {
               return false;
             }
@@ -101,7 +113,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         } else {
           // Only check nested if parent exists
           if (!hasNestedKey('train', 'data')) {
-            errors.push("Missing required key in 'train': 'data'");
+            errors.push("Missing required nested key: 'train' > 'data'");
           }
         }
 
@@ -110,7 +122,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         } else {
            // Only check nested if parent exists
            if (!hasNestedKey('sweeper', 'study_name')) {
-             errors.push("Missing required key in 'sweeper': 'study_name'");
+             errors.push("Missing required nested key: 'sweeper' > 'study_name'");
            }
         }
 
