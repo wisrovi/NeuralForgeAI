@@ -43,7 +43,6 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         const missingKeys = [];
         
         // Helper to check for key existence (YAML: "key:" or JSON: "\"key\":")
-        // This regex looks for the key at the start of a line or after whitespace/quotes, followed by a colon
         const hasKey = (key: string) => {
           const regex = new RegExp(`(^|\\s|")${key}("|\\s)*:`, 'm');
           return regex.test(content);
@@ -254,7 +253,7 @@ sweeper:
                     ref={fileInputRef} 
                     className="hidden" 
                     onChange={handleFileSelect}
-                    accept=".yaml,.yml,.json"
+                    accept=".yaml,.yml,.json,application/json,text/yaml,text/x-yaml,application/x-yaml"
                   />
                   
                   {/* Icon Area */}
@@ -270,23 +269,20 @@ sweeper:
                     {validationError ? 'Configuration Rejected' : 'Click or Drag Configuration'}
                   </h3>
                   
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
                     {validationError ? validationError : 'Upload your training manifest to initialize the cluster job.'}
                   </p>
 
-                  {/* Limits and Types Indicator */}
-                  <div className="flex items-center gap-4 w-full max-w-xs mx-auto">
-                    <div className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50">
-                       <FileCode size={18} className="text-blue-500" />
-                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">Formats</span>
-                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">YAML, JSON</span>
-                    </div>
-                    <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50">
-                       <HardDrive size={18} className="text-amber-500" />
-                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">Size Limit</span>
-                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">5 MB MAX</span>
-                    </div>
+                  {/* Enhanced Limits and Types Indicator */}
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                      <FileCode size={12} className="text-blue-500" />
+                      .yaml, .yml, .json
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                      <HardDrive size={12} className="text-amber-500" />
+                      Max 5MB
+                    </span>
                   </div>
 
                 </div>
