@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, FileJson, HardDrive, ShieldAlert } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -23,7 +23,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
 
   const validateFileContent = (fileToValidate: File): Promise<string | null> => {
     return new Promise((resolve) => {
-      // 1. Check Empty
+      // 1. Check Empty File Object
       if (fileToValidate.size === 0) {
         return resolve("The uploaded file is empty.");
       }
@@ -38,14 +38,22 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        if (!content) return resolve("Could not read file content.");
+        
+        // Check for empty content string
+        if (!content || content.trim().length === 0) {
+          return resolve("The file content is empty.");
+        }
 
-        const missingKeys = [];
+        const missingKeys: string[] = [];
         
         // Helper to check for key existence (YAML: "key:" or JSON: "\"key\":")
+        // Uses regex to ensure key is at start of line (ignoring indentation) to avoid comments
         const hasKey = (key: string) => {
-          const regex = new RegExp(`(^|\\s|")${key}("|\\s)*:`, 'm');
-          return regex.test(content);
+          // YAML: start of line, optional spaces/tabs, key, optional spaces/tabs, colon
+          const yamlRegex = new RegExp(`^[ \\t]*${key}[ \\t]*:`, 'm');
+          // JSON: "key", optional spaces/tabs, colon
+          const jsonRegex = new RegExp(`"${key}"[ \\t]*:`, 'm');
+          return yamlRegex.test(content) || jsonRegex.test(content);
         };
 
         if (!hasKey('model')) missingKeys.push('model');
@@ -53,7 +61,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         if (!hasKey('sweeper')) missingKeys.push('sweeper');
 
         if (missingKeys.length > 0) {
-          resolve(`Invalid Configuration. Missing required root keys: ${missingKeys.join(', ')}`);
+          resolve(`Invalid Configuration. Missing required keys: ${missingKeys.join(', ')}. Please ensure they are not commented out.`);
         } else {
           resolve(null); // Valid
         }
