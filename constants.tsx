@@ -29,7 +29,7 @@ export const UPLOAD_API_CONFIG = {
 };
 
 // Dashboard API Configuration
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5809';
 
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
@@ -79,14 +79,19 @@ export const DASHBOARD_API_CONFIG = {
 export const DEFAULT_USERS: UserProfile[] = [
   { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@neuroforge.ai', role: 'admin' },
   { id: 'u2', name: 'Guest Researcher', email: 'guest@neuroforge.ai', role: 'dev' },
-  { id: 'u3', name: 'AI Worker Bot', email: 'bot-01@neuroforge.ai', role: 'dev' },
 ];
 
 export const DEFAULT_PROJECTS: ProjectDefinition[] = [
-  { id: 'p1', name: 'YOLOv8-Base-Coco', description: 'Baseline training on COCO 2017 dataset', createdAt: '2023-11-01' },
-  { id: 'p2', name: 'Industrial-Defect-V2', description: 'Fine-tuning for manufacturing surface defects', createdAt: '2024-01-15' },
-  { id: 'p3', name: 'Traffic-Sign-Gen-Opt', description: 'Genetic optimization for traffic sign detection', createdAt: '2024-02-20' },
+  { id: 'p1', name: 'wTicketFlow', description: 'The modern, secure and efficient solution for backend-free ticket management.', createdAt: '2025-11-01' },
+  { id: 'p2', name: 'NeuralForgeAI', description: 'The Next Generation of AI Training Orchestration', createdAt: '2025-12-15' },
+  { id: 'p3', name: 'wAgents', description: 'Fully equipped work environment for AI development', createdAt: '2025-11-15' },
+  { id: 'p4', name: 'NexusFlow', description: 'Organizational Diagnostic System', createdAt: '2025-12-01' },
 ];
+
+
+const MLFLOW_TRACKING_URI = import.meta.env.MLFLOW_TRACKING_URI || 'http://localhost:23435';
+const REDIS_TRACKING_URL = import.meta.env.REDIS_TRACKING_URL || 'http://localhost:23439';
+const FILEBROWSER_URL = import.meta.env.FILEBROWSER_URL || 'http://localhost:23443';
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
@@ -131,60 +136,38 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     id: 'mlflow',
     name: 'MLflow Tracking',
     description: 'Experiment logging, metrics, and artifact storage',
-    url: `${import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://neuroforge-api:8000/mlflow'}`,
+    url: `${import.meta.env.MLFLOW_TRACKING_URI || 'http://localhost:23435'}`,
     icon: <GitBranch size={20} />,
   },
-  {
-    id: 'minio',
-    name: 'MinIO Storage',
-    description: 'Object storage for datasets and model weights',
-    url: `${import.meta.env.VITE_MINIO_URL || 'http://neuroforge-api:9000'}`,
-    icon: <HardDrive size={20} />,
-  },
+  // {
+  //   id: 'minio',
+  //   name: 'MinIO Storage',
+  //   description: 'Object storage for datasets and model weights',
+  //   url: `${import.meta.env.REDIS_TRACKING_URL || 'http://localhost:23439'}`,
+  //   icon: <HardDrive size={20} />,
+  // },
   {
     id: 'redis',
     name: 'Redis Queue',
     description: 'Job orchestration and task scheduling status',
-    url: `${import.meta.env.VITE_REDIS_TRACKING_URL || 'http://neuroforge-api:8000/redis'}`,
+    url: `${import.meta.env.REDIS_TRACKING_URL || 'http://localhost:23439'}`,
     icon: <Layers size={20} />,
   },
   {
     id: 'datasets',
     name: 'Datasets',
     description: 'File Browser for Training Data management',
-    url: `${import.meta.env.VITE_FILEBROWSER_URL || 'http://neuroforge-api:8000/filebrowser'}`,
+    url: `${import.meta.env.FILEBROWSER_URL || 'http://localhost:23443'}`,
     icon: <FolderOpen size={20} />,
-  },
-  {
-    id: 'minio',
-    name: 'MinIO Storage',
-    description: 'Object storage for datasets and model weights',
-    url: 'about:blank',
-    icon: <HardDrive size={20} />,
-    minRole: 'admin'
-  },
-  {
-    id: 'redis',
-    name: 'Redis Queue',
-    description: 'Job orchestration and task scheduling status',
-    url: 'about:blank',
-    icon: <Layers size={20} />,
-  },
-  {
-    id: 'datasets',
-    name: 'Datasets',
-    description: 'File Browser for Training Data management',
-    url: 'about:blank',
-    icon: <FolderOpen size={20} />,
-  },
-  {
-    id: 'genetic-opt',
-    name: 'Genetic Optimization',
-    description: 'Hyperparameter tuning with evolutionary algorithms',
-    url: 'about:blank',
-    icon: <Brain size={20} />,
-    minRole: 'admin'
-  },
+  },  
+  // {
+  //   id: 'genetic-opt',
+  //   name: 'Genetic Optimization',
+  //   description: 'Hyperparameter tuning with evolutionary algorithms',
+  //   url: 'about:blank',
+  //   icon: <Brain size={20} />,
+  //   minRole: 'admin'
+  // },
   {
     id: 'users',
     name: 'Team Access',
@@ -216,7 +199,7 @@ export const DEVELOPER_PROFILE = {
   location: "Bogotá, Colombia",
   linkedin: "https://www.linkedin.com/in/wisrovi-rodriguez/",
   linkedinSearch: "https://www.linkedin.com/in/wisrovi-rodriguez/",
-  avatarUrl: "" 
+  avatarUrl: "https://media.licdn.com/dms/image/v2/D4E03AQFvEdF-sFaNAg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713247892716?e=1766016000&v=beta&t=t1VItss12ESC48cGJxrfp183GXvka8FbZ9oStnbfM28" 
 };
 
 export const PRESENTATION_SLIDES = [
@@ -245,7 +228,7 @@ export const PRESENTATION_SLIDES = [
     icon: "dna"
   },
   {
-    title: "Ray Tune & Scalability",
+    title: "Ray Tune or Optuna & Scalability",
     subtitle: "Massive Parallelism",
     content: "Leveraging Ray Tune for scalable hyperparameter tuning. The system can run hundreds of concurrent trials, efficiently pruning underperforming models to save GPU hours.",
     icon: "zap"
@@ -287,8 +270,8 @@ export const MOCK_LOGS = [
   "[WORKER-01] GPU 0 allocated for Trial #4a2b9",
   "[REDIS] Queue depth: 14 jobs pending",
   "[MLFLOW] Experiment 'yolo-v8-base' created",
-  "[MINIO] Downloading dataset 'coco-2017-subset.zip' (2.4GB)",
-  "[GENETIC] Generation 4 complete. Best fitness: 0.894 mAP",
+  // "[MINIO] Downloading dataset 'coco-2017-subset.zip' (2.4GB)",
+  // "[GENETIC] Generation 4 complete. Best fitness: 0.894 mAP",
   "[WARN] Node-03 high memory usage (92%)",
   "[SYSTEM] Auto-scaling trigger: requesting 2 spot instances",
 ];

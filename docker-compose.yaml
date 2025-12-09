@@ -1,18 +1,9 @@
 version: '3.8'
 
-services:
-  neuroforge-api:
-    build: ./backend/api
-    image: wisrovi/neuralforgeai_backend:latest
-    ports:
-      - "5809:8000"
-    environment:
-      - PYTHONPATH=/app
-    restart: unless-stopped
-    
+services:    
   neuroforge-frontend:
-    build: ./frontend
-    image: wisrovi/neuralforgeai_frontend:latest
+    build: .
+    image: wisrovi/w_darwin_ops-frontend:latest
     ports:
       - "5810:4173"
     environment:
@@ -23,6 +14,8 @@ services:
       - FILEBROWSER_URL=http://192.168.1.84:23443/files/
     env_file:
       - .env
-    depends_on:
-      - neuroforge-api
-    restart: unless-stopped
+
+networks:
+  default:
+    external: true
+    name: wyoloservice_network
