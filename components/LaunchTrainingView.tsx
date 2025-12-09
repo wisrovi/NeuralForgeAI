@@ -16,22 +16,22 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [responseMsg, setResponseMsg] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showTemplate, setShowTemplate] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFileContent = (fileToValidate: File): Promise<string | null> => {
+  const validateFileContent = (fileToValidate: File): Promise<string[] | null> => {
     return new Promise((resolve) => {
       // 1. Check Empty File Object
       if (fileToValidate.size === 0) {
-        return resolve("The uploaded file is empty.");
+        return resolve(["The uploaded file is empty."]);
       }
 
       // 2. Check Size (5MB Limit)
       const MAX_SIZE = 5 * 1024 * 1024; // 5MB
       if (fileToValidate.size > MAX_SIZE) {
-        return resolve("File exceeds the maximum size limit of 5MB.");
+        return resolve(["File exceeds the maximum size limit of 5MB."]);
       }
 
       // 3. Check Content Keys
@@ -41,45 +41,99 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         
         // Check for empty content string
         if (!content || content.trim().length === 0) {
-          return resolve("The file content is empty.");
+          return resolve(["The file content is empty."]);
         }
 
-        const missingKeys: string[] = [];
-        
-        // Helper to check for key existence (YAML: "key:" or JSON: "\"key\":")
-        // Uses regex to ensure key is at start of line (ignoring indentation) to avoid comments
-        const hasKey = (key: string) => {
-          // YAML: start of line, optional spaces/tabs, key, optional spaces/tabs, colon
-          const yamlRegex = new RegExp(`^[ \\t]*${key}[ \\t]*:`, 'm');
-          // JSON: "key", optional spaces/tabs, colon
-          const jsonRegex = new RegExp(`"${key}"[ \\t]*:`, 'm');
-          return yamlRegex.test(content) || jsonRegex.test(content);
+        const lines = content.split('\n');
+        const errors: string[] = [];
+
+        // Helper: Check if a key exists at the top level (indentation 0) or loosely for JSON
+        const hasTopLevelKey = (key: string) => {
+          // Matches "key:" or "key": or "key" : at start of line
+          const regex = new RegExp(`^[ \\t]*"?${key}"?[ \\t]*:`);
+          return lines.some(line => regex.test(line));
         };
 
-        if (!hasKey('model')) missingKeys.push('model');
-        if (!hasKey('train')) missingKeys.push('train');
-        if (!hasKey('sweeper')) missingKeys.push('sweeper');
+        // Helper: Check for nested key within a parent block (YAML indentation based)
+        const hasNestedKey = (parent: string, child: string) => {
+          // 1. Find parent line index
+          const parentRegex = new RegExp(`^[ \\t]*"?${parent}"?[ \\t]*:`);
+          const parentIdx = lines.findIndex(line => parentRegex.test(line));
+          
+          if (parentIdx === -1) return false; // Parent not found
 
-        if (missingKeys.length > 0) {
-          resolve(`Invalid Configuration. Missing required keys: ${missingKeys.join(', ')}. Please ensure they are not commented out.`);
+          // 2. Determine parent indentation
+          const parentLine = lines[parentIdx];
+          const parentIndent = parentLine.search(/\S/); // Index of first non-whitespace char
+
+          // 3. Scan subsequent lines
+          for (let i = parentIdx + 1; i < lines.length; i++) {
+            const line = lines[i];
+            
+            // Skip empty lines or comments
+            if (!line.trim() || line.trim().startsWith('#')) continue;
+
+            const currentIndent = line.search(/\S/);
+            
+            // If we hit a line with same or less indentation than parent, the block has ended
+            // (Note: This is a simplified check; JSON works differently but usually has braces. 
+            // For mixed support we assume standard indentation for YAML/readable JSON)
+            if (currentIndent !== -1 && currentIndent <= parentIndent) {
+              return false;
+            }
+
+            // Check if this line contains the child key
+            const childRegex = new RegExp(`^[ \\t]*"?${child}"?[ \\t]*:`);
+            if (childRegex.test(line)) {
+              return true;
+            }
+          }
+          return false;
+        };
+
+        // Validation Rules
+        if (!hasTopLevelKey('model')) {
+          errors.push("Missing top-level key: 'model'");
+        }
+
+        if (!hasTopLevelKey('train')) {
+          errors.push("Missing top-level key: 'train'");
+        } else {
+          // Only check nested if parent exists
+          if (!hasNestedKey('train', 'data')) {
+            errors.push("Missing required key in 'train': 'data'");
+          }
+        }
+
+        if (!hasTopLevelKey('sweeper')) {
+          errors.push("Missing top-level key: 'sweeper'");
+        } else {
+           // Only check nested if parent exists
+           if (!hasNestedKey('sweeper', 'study_name')) {
+             errors.push("Missing required key in 'sweeper': 'study_name'");
+           }
+        }
+
+        if (errors.length > 0) {
+          resolve(errors);
         } else {
           resolve(null); // Valid
         }
       };
-      reader.onerror = () => resolve("Error reading file content.");
+      reader.onerror = () => resolve(["Error reading file content."]);
       reader.readAsText(fileToValidate);
     });
   };
 
   const processFile = async (selectedFile: File) => {
-    setValidationError(null);
+    setValidationErrors([]);
     setUploadStatus('idle');
     setResponseMsg('');
 
-    const error = await validateFileContent(selectedFile);
+    const errors = await validateFileContent(selectedFile);
     
-    if (error) {
-      setValidationError(error);
+    if (errors && errors.length > 0) {
+      setValidationErrors(errors);
       setFile(null);
     } else {
       setFile(selectedFile);
@@ -115,7 +169,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
 
     setUploadStatus('uploading');
     setResponseMsg('');
-    setValidationError(null);
+    setValidationErrors([]);
 
     const user = users.find(u => u.id === selectedUserId);
     const project = projects.find(p => p.id === selectedProjectId);
@@ -250,7 +304,7 @@ sweeper:
                     flex flex-col items-center justify-center min-h-[250px]
                     ${isDragging 
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[0.99] ring-4 ring-blue-500/10' 
-                      : validationError
+                      : validationErrors.length > 0
                         ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/5'
                         : 'border-gray-300 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
                     }
@@ -267,19 +321,30 @@ sweeper:
                   {/* Icon Area */}
                   <div className={`
                     w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-colors duration-300
-                    ${isDragging ? 'bg-blue-100 text-blue-600' : validationError ? 'bg-red-100 text-red-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-50 dark:group-hover:bg-gray-700 group-hover:text-blue-500'}
+                    ${isDragging ? 'bg-blue-100 text-blue-600' : validationErrors.length > 0 ? 'bg-red-100 text-red-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-50 dark:group-hover:bg-gray-700 group-hover:text-blue-500'}
                   `}>
-                    {validationError ? <ShieldAlert size={36} /> : <UploadCloud size={36} />}
+                    {validationErrors.length > 0 ? <ShieldAlert size={36} /> : <UploadCloud size={36} />}
                   </div>
 
                   {/* Main Action Text */}
-                  <h3 className={`text-lg font-bold mb-2 ${validationError ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                    {validationError ? 'Configuration Rejected' : 'Click or Drag Configuration'}
+                  <h3 className={`text-lg font-bold mb-2 ${validationErrors.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                    {validationErrors.length > 0 ? 'Configuration Rejected' : 'Click or Drag Configuration'}
                   </h3>
                   
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
-                    {validationError ? validationError : 'Upload your training manifest to initialize the cluster job.'}
-                  </p>
+                  {validationErrors.length > 0 ? (
+                    <div className="text-sm text-red-500 dark:text-red-400 mb-6 max-w-sm mx-auto text-left bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/50">
+                      <p className="font-semibold mb-1 border-b border-red-200 dark:border-red-800/50 pb-1">Validation Errors:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {validationErrors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
+                      Upload your training manifest to initialize the cluster job.
+                    </p>
+                  )}
 
                   {/* Enhanced Limits and Types Indicator */}
                   <div className="flex flex-wrap items-center justify-center gap-3">
@@ -391,8 +456,8 @@ sweeper:
                <li className="flex gap-3">
                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></div>
                  <div>
-                   <strong className="block text-gray-900 dark:text-gray-200 mb-0.5">Registry Check</strong>
-                   Only users listed in the <strong>Team Access</strong> registry can initiate new training jobs.
+                   <strong className="block text-gray-900 dark:text-gray-200 mb-0.5">Required Data</strong>
+                   Ensure <code>train</code> block contains <code>data</code> path and <code>sweeper</code> contains <code>study_name</code>.
                  </div>
                </li>
                <li className="flex gap-3">
