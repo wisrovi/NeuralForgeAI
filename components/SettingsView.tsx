@@ -6,7 +6,6 @@ import {
   Globe, 
   User, 
   RotateCcw,
-  CheckCircle,
   Sparkles,
   Shield,
   ShieldAlert,
@@ -179,9 +178,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                     onClick={handleSave}
                     disabled={(!hasChanges && saveStatus === 'idle') || saveStatus === 'saving' || saveStatus === 'saved'}
                     className={`
-                      flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 transform
+                      flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all duration-300 transform min-w-[160px]
                       ${saveStatus === 'saved' 
-                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 scale-105' 
+                        ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-500/20 scale-105 ring-2 ring-green-500/50' 
                         : saveStatus === 'saving'
                           ? 'bg-blue-600 text-white cursor-wait opacity-90'
                           : hasChanges
@@ -190,22 +189,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                       }
                     `}
                   >
-                    {saveStatus === 'saving' ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : saveStatus === 'saved' ? (
-                      <>
-                        <Check size={18} className="animate-bounce" />
-                        <span>Changes Saved</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save size={18} />
-                        <span>Save Changes</span>
-                      </>
-                    )}
+                    <span className={`flex items-center gap-2 transition-all duration-300 ${saveStatus === 'saved' ? 'scale-110' : ''}`}>
+                      {saveStatus === 'saving' ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : saveStatus === 'saved' ? (
+                        <>
+                          <Check size={18} strokeWidth={3} />
+                          <span>Saved!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save size={18} />
+                          <span>Save Changes</span>
+                        </>
+                      )}
+                    </span>
                   </button>
                 </div>
               </>
