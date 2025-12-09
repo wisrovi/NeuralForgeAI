@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   BookOpen,
   FolderOpen,
-  Rocket,
+  Rocket, 
   Info,
   Library
 } from 'lucide-react';
@@ -21,70 +21,87 @@ import { Microservice, UserProfile, ProjectDefinition } from './types';
 
 export const APP_NAME = "WDarwin Ops";
 
+// Helper for safe environment variable access
+const getEnv = (key: string, fallback: string) => {
+  try {
+    const env = (import.meta as any).env;
+    return env?.[key] || fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const API_BASE = getEnv('VITE_API_URL', 'http://localhost:5809');
+const UPLOAD_API_BASE = getEnv('VITE_API_URL', 'http://neuroforge-api:8000');
+
 // === API CONFIGURATION ===
 
 export const UPLOAD_API_CONFIG = {
-  url: 'https://jsonplaceholder.typicode.com/posts',
+  url: `${UPLOAD_API_BASE}/posts`,
   method: 'POST'
 };
 
 // Dashboard API Configuration
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=workers',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "count_active_nodes" }
+    payload: { metric: "workers", query: "count_active_nodes" }
   },
   gpuUtil: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=gpu',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "avg_gpu_utilization" }
+    payload: { metric: "gpu", query: "avg_gpu_utilization" }
   },
   queueDepth: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=queue',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "redis_queue_length" }
+    payload: { metric: "queue", query: "redis_queue_length" }
   },
   storageUsed: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=storage',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { query: "minio_bucket_size" }
+    payload: { metric: "storage", query: "minio_bucket_size" }
   },
   activeJobs: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=jobs_list',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { status: "running", limit: 5 }
+    payload: { metric: "jobs_list", status: "running", limit: 5 }
   },
   redisMemory: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=redis_mem',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { instance: "primary_cache" }
+    payload: { metric: "redis_mem", instance: "primary_cache" }
   },
   minioBandwidth: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=minio_bw',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { bucket: "training_data" }
+    payload: { metric: "minio_bw", bucket: "training_data" }
   },
   estCompletion: {
-    url: 'https://jsonplaceholder.typicode.com/posts?metric=eta',
+    url: `${API_BASE}/posts`,
     method: 'POST',
-    payload: { job_ids: "active" }
+    payload: { metric: "eta", job_ids: "active" }
   }
 };
 
 // === DEFAULT DATA ===
 
 export const DEFAULT_USERS: UserProfile[] = [
-  { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@darwin-ops.ai', role: 'admin' },
-  { id: 'u2', name: 'Guest Researcher', email: 'guest@darwin-ops.ai', role: 'dev' },
-  { id: 'u3', name: 'AI Worker Bot', email: 'bot-01@darwin-ops.ai', role: 'dev' },
+  { id: 'u1', name: 'Wisrovi Rodriguez', email: 'wisrovi@neuroforge.ai', role: 'admin' },
+  { id: 'u2', name: 'Guest Researcher', email: 'guest@neuroforge.ai', role: 'dev' },
 ];
 
 export const DEFAULT_PROJECTS: ProjectDefinition[] = [
-  { id: 'p1', name: 'YOLOv8-Base-Coco', description: 'Baseline training on COCO 2017 dataset', createdAt: '2023-11-01' },
-  { id: 'p2', name: 'Industrial-Defect-V2', description: 'Fine-tuning for manufacturing surface defects', createdAt: '2024-01-15' },
-  { id: 'p3', name: 'Traffic-Sign-Gen-Opt', description: 'Genetic optimization for traffic sign detection', createdAt: '2024-02-20' },
+  { id: 'p1', name: 'wTicketFlow', description: 'The modern, secure and efficient solution for backend-free ticket management.', createdAt: '2025-11-01' },
+  { id: 'p2', name: 'NeuralForgeAI', description: 'The Next Generation of AI Training Orchestration', createdAt: '2025-12-15' },
+  { id: 'p3', name: 'wAgents', description: 'Fully equipped work environment for AI development', createdAt: '2025-11-15' },
+  { id: 'p4', name: 'NexusFlow', description: 'Organizational Diagnostic System', createdAt: '2025-12-01' },
 ];
+
+const MLFLOW_TRACKING_URI = getEnv('MLFLOW_TRACKING_URI', 'http://localhost:23435');
+const REDIS_TRACKING_URL = getEnv('REDIS_TRACKING_URL', 'http://localhost:23439');
+const FILEBROWSER_URL = getEnv('FILEBROWSER_URL', 'http://localhost:23443');
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
@@ -95,7 +112,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     icon: <LayoutDashboard size={20} />,
   },
   {
-    id: 'launch-training',
+    id: 'launch-training', 
     name: 'Launch Training',
     description: 'Deploy new experiments to the cluster',
     url: 'internal:launch',
@@ -129,39 +146,23 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     id: 'mlflow',
     name: 'MLflow Tracking',
     description: 'Experiment logging, metrics, and artifact storage',
-    url: 'about:blank',
+    url: MLFLOW_TRACKING_URI,
     icon: <GitBranch size={20} />,
-  },
-  {
-    id: 'minio',
-    name: 'MinIO Storage',
-    description: 'Object storage for datasets and model weights',
-    url: 'about:blank',
-    icon: <HardDrive size={20} />,
-    minRole: 'admin'
   },
   {
     id: 'redis',
     name: 'Redis Queue',
     description: 'Job orchestration and task scheduling status',
-    url: 'about:blank',
+    url: REDIS_TRACKING_URL,
     icon: <Layers size={20} />,
   },
   {
     id: 'datasets',
     name: 'Datasets',
     description: 'File Browser for Training Data management',
-    url: 'about:blank',
+    url: FILEBROWSER_URL,
     icon: <FolderOpen size={20} />,
-  },
-  {
-    id: 'genetic-opt',
-    name: 'Genetic Optimization',
-    description: 'Hyperparameter tuning with evolutionary algorithms',
-    url: 'about:blank',
-    icon: <Brain size={20} />,
-    minRole: 'admin'
-  },
+  },  
   {
     id: 'users',
     name: 'Team Access',
@@ -189,24 +190,24 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
 export const DEVELOPER_PROFILE = {
   name: "Wisrovi Rodríguez",
   title: "Software Engineer & System Architect",
-  bio: "Specialized in AI Infrastructure and Orchestration. Creator of WDarwin Ops, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
+  bio: "Specialized in AI Infrastructure and Orchestration. Creator of NeuroForge, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
   location: "Bogotá, Colombia",
   linkedin: "https://www.linkedin.com/in/wisrovi-rodriguez/",
   linkedinSearch: "https://www.linkedin.com/in/wisrovi-rodriguez/",
-  avatarUrl: "" 
+  avatarUrl: "https://media.licdn.com/dms/image/v2/D4E03AQFvEdF-sFaNAg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713247892716?e=1766016000&v=beta&t=t1VItss12ESC48cGJxrfp183GXvka8FbZ9oStnbfM28" 
 };
 
 export const PRESENTATION_SLIDES = [
   {
     title: "Welcome to WDarwin Ops",
-    subtitle: "Evolutionary Intelligence",
-    content: "An advanced orchestration platform designed for high-performance AI lifecycles. 'Darwin' represents the system's core philosophy: models are not just trained; they are evolved through genetic selection, ensuring only the fittest hyperparameters survive.",
+    subtitle: "The Next Generation of AI Training Orchestration",
+    content: "WDarwin Ops is a centralized command center designed to orchestrate complex YOLO model training across distributed GPU clusters. It bridges the gap between raw compute power and intelligent model evolution.",
     icon: "logo"
   },
   {
     title: "System Architecture",
     subtitle: "Centralized Brain, Distributed Muscle",
-    content: "A Hub-and-Spoke architecture where the central server dispatches training jobs to remote worker nodes (The Hive). It ensures data consistency and unified monitoring across the entire training fleet.",
+    content: "A Hub-and-Spoke architecture where the central WDarwin Ops server dispatches training jobs to remote worker nodes. It ensures data consistency and unified monitoring across the entire training fleet.",
     icon: "server"
   },
   {
@@ -218,11 +219,11 @@ export const PRESENTATION_SLIDES = [
   {
     title: "Genetic Algorithms",
     subtitle: "Evolutionary Hyperparameter Optimization",
-    content: "WDarwin Ops applies biological principles to machine learning. By utilizing mutation, crossover, and selection, the system automatically discovers the optimal hyperparameters for your specific dataset.",
+    content: "WDarwin Ops doesn't just train; it evolves. By applying genetic algorithms (mutation, crossover, selection), the system automatically discovers the optimal hyperparameters for your specific dataset.",
     icon: "dna"
   },
   {
-    title: "Ray Tune & Scalability",
+    title: "Ray Tune or Optuna & Scalability",
     subtitle: "Massive Parallelism",
     content: "Leveraging Ray Tune for scalable hyperparameter tuning. The system can run hundreds of concurrent trials, efficiently pruning underperforming models to save GPU hours.",
     icon: "zap"
@@ -240,7 +241,7 @@ export const PRESENTATION_SLIDES = [
     icon: "activity"
   },
   {
-    title: "The Hive Queue",
+    title: "Task Queue System",
     subtitle: "Robust Job Scheduling",
     content: "An intelligent priority queue system that handles job preemption, retries on failure, and load balancing across available GPU resources to ensure maximum cluster utilization.",
     icon: "layers"
@@ -261,11 +262,9 @@ export const PRESENTATION_SLIDES = [
 
 export const MOCK_LOGS = [
   "[SYSTEM] Initializing Ray Cluster connection...",
-  "[HIVE-01] GPU 0 allocated for Trial #4a2b9",
+  "[WORKER-01] GPU 0 allocated for Trial #4a2b9",
   "[REDIS] Queue depth: 14 jobs pending",
   "[MLFLOW] Experiment 'yolo-v8-base' created",
-  "[MINIO] Downloading dataset 'coco-2017-subset.zip' (2.4GB)",
-  "[GENETIC] Generation 4 complete. Best fitness: 0.894 mAP",
   "[WARN] Node-03 high memory usage (92%)",
   "[SYSTEM] Auto-scaling trigger: requesting 2 spot instances",
 ];
