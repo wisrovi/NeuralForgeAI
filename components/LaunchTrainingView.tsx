@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, FileJson } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, FileJson, HardDrive, ShieldAlert } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -28,20 +28,33 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         return resolve("The uploaded file is empty.");
       }
 
-      // 2. Check Content Keys
+      // 2. Check Size (5MB Limit)
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      if (fileToValidate.size > MAX_SIZE) {
+        return resolve("File exceeds the maximum size limit of 5MB.");
+      }
+
+      // 3. Check Content Keys
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
         if (!content) return resolve("Could not read file content.");
 
         const missingKeys = [];
-        // flexible check for yaml "key:" or json "key": patterns
-        if (!content.includes('model') && !content.includes('"model"')) missingKeys.push('model');
-        if (!content.includes('train') && !content.includes('"train"')) missingKeys.push('train');
-        if (!content.includes('sweeper') && !content.includes('"sweeper"')) missingKeys.push('sweeper');
+        
+        // Helper to check for key existence (YAML: "key:" or JSON: "\"key\":")
+        // This regex looks for the key at the start of a line or after whitespace/quotes, followed by a colon
+        const hasKey = (key: string) => {
+          const regex = new RegExp(`(^|\\s|")${key}("|\\s)*:`, 'm');
+          return regex.test(content);
+        };
+
+        if (!hasKey('model')) missingKeys.push('model');
+        if (!hasKey('train')) missingKeys.push('train');
+        if (!hasKey('sweeper')) missingKeys.push('sweeper');
 
         if (missingKeys.length > 0) {
-          resolve(`Invalid Configuration: Missing required keys: ${missingKeys.join(', ')}`);
+          resolve(`Invalid Configuration. Missing required root keys: ${missingKeys.join(', ')}`);
         } else {
           resolve(null); // Valid
         }
@@ -196,7 +209,7 @@ sweeper:
               </div>
             </div>
 
-            {/* Drag & Drop Zone */}
+            {/* Custom Drag & Drop Component */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -227,8 +240,9 @@ sweeper:
                   onClick={() => fileInputRef.current?.click()}
                   className={`
                     relative group border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ease-in-out
+                    flex flex-col items-center justify-center min-h-[250px]
                     ${isDragging 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[0.99]' 
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[0.99] ring-4 ring-blue-500/10' 
                       : validationError
                         ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/5'
                         : 'border-gray-300 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
@@ -243,51 +257,54 @@ sweeper:
                     accept=".yaml,.yml,.json"
                   />
                   
+                  {/* Icon Area */}
                   <div className={`
-                    w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center transition-colors duration-300
-                    ${isDragging ? 'bg-blue-100 text-blue-600' : validationError ? 'bg-red-100 text-red-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500'}
+                    w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-colors duration-300
+                    ${isDragging ? 'bg-blue-100 text-blue-600' : validationError ? 'bg-red-100 text-red-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-50 dark:group-hover:bg-gray-700 group-hover:text-blue-500'}
                   `}>
-                    {validationError ? <AlertCircle size={32} /> : <UploadCloud size={32} />}
+                    {validationError ? <ShieldAlert size={36} /> : <UploadCloud size={36} />}
                   </div>
 
-                  <h3 className={`text-lg font-semibold mb-2 ${validationError ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                    {validationError ? 'Invalid Configuration' : 'Upload Configuration File'}
+                  {/* Main Action Text */}
+                  <h3 className={`text-lg font-bold mb-2 ${validationError ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                    {validationError ? 'Configuration Rejected' : 'Click or Drag Configuration'}
                   </h3>
                   
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-                    {validationError ? validationError : 'Drag and drop your experiment config here, or click to browse your file system.'}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-sm mx-auto leading-relaxed">
+                    {validationError ? validationError : 'Upload your training manifest to initialize the cluster job.'}
                   </p>
 
-                  <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
-                    <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      <FileCode size={12} className="text-blue-500" />
-                      .YAML
-                    </span>
-                    <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      <FileJson size={12} className="text-amber-500" />
-                      .JSON
-                    </span>
-                    <span className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded border border-gray-200 dark:border-gray-700">
-                      <AlertCircle size={12} className="text-red-400" />
-                      MAX 5MB
-                    </span>
+                  {/* Limits and Types Indicator */}
+                  <div className="flex items-center gap-4 w-full max-w-xs mx-auto">
+                    <div className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50">
+                       <FileCode size={18} className="text-blue-500" />
+                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">Formats</span>
+                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">YAML, JSON</span>
+                    </div>
+                    <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
+                    <div className="flex-1 flex flex-col items-center gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700/50">
+                       <HardDrive size={18} className="text-amber-500" />
+                       <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 tracking-wider">Size Limit</span>
+                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">5 MB MAX</span>
+                    </div>
                   </div>
+
                 </div>
               ) : (
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex items-center justify-between animate-fade-in shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-900 shadow-sm">
-                      <File size={20} />
+                // Selected File State
+                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-center justify-between animate-fade-in shadow-sm min-h-[100px]">
+                  <div className="flex items-center gap-5">
+                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-900 shadow-sm">
+                      <File size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">{file.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+                      <p className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[200px] md:max-w-md">{file.name}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700">
                           {(file.size / 1024).toFixed(2)} KB
                         </span>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                        <span className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
-                          <CheckCircle size={10} /> Valid Config
+                        <span className="text-xs text-green-600 dark:text-green-400 font-bold flex items-center gap-1">
+                          <CheckCircle size={12} fill="currentColor" className="text-green-100 dark:text-green-900" /> Validated
                         </span>
                       </div>
                     </div>
@@ -295,10 +312,10 @@ sweeper:
                   <button 
                     type="button"
                     onClick={() => setFile(null)}
-                    className="p-2 hover:bg-white dark:hover:bg-gray-800 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-3 hover:bg-white dark:hover:bg-gray-800 rounded-xl text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                     title="Remove file"
                   >
-                    <X size={18} />
+                    <X size={20} />
                   </button>
                 </div>
               )}
@@ -306,7 +323,7 @@ sweeper:
 
             {/* Status Messages */}
             {uploadStatus === 'error' && (
-              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-200 rounded-xl text-sm flex items-start gap-3">
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-200 rounded-xl text-sm flex items-start gap-3 animate-fade-in">
                 <AlertCircle size={18} className="mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold">Submission Failed</p>
@@ -316,7 +333,7 @@ sweeper:
             )}
             
             {uploadStatus === 'success' && (
-              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 text-green-800 dark:text-green-200 rounded-xl text-sm flex items-start gap-3">
+              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 text-green-800 dark:text-green-200 rounded-xl text-sm flex items-start gap-3 animate-fade-in">
                 <CheckCircle size={18} className="mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold">Successfully Launched</p>
@@ -330,21 +347,21 @@ sweeper:
               type="submit"
               disabled={!file || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'}
               className={`
-                w-full py-3.5 rounded-xl font-medium flex items-center justify-center gap-2.5 transition-all duration-200
+                w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2.5 transition-all duration-200
                 ${!file || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:-translate-y-0.5'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:-translate-y-0.5'
                 }
               `}
             >
               {uploadStatus === 'uploading' ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={24} className="animate-spin" />
                   <span>Provisioning Resources...</span>
                 </>
               ) : (
                 <>
-                  <Rocket size={20} />
+                  <Rocket size={24} />
                   <span>Launch Training Job</span>
                 </>
               )}
@@ -354,7 +371,7 @@ sweeper:
 
         {/* Info Panel */}
         <div className="space-y-6">
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 border border-gray-200 dark:border-gray-800 sticky top-6">
              <div className="flex items-center gap-2 mb-4">
                <Info size={18} className="text-blue-500" />
                <h3 className="font-semibold text-gray-900 dark:text-white">Submission Policy</h3>
