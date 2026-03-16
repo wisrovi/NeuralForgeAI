@@ -1,208 +1,260 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# NeuralForgeAI - React Frontend Interface
 
-# NeuralForgeAI - Frontend React para Control de Entrenamiento ML
+Interfaz de usuario moderna construida en **React** que permite a los usuarios lanzar estudios de entrenamiento de modelos YOLO de forma visual e intuitiva. Es el **punto de entrada visual** al cluster NeuralForgeAI.
 
-Interfaz de usuario moderna y elegante construida en **React** que permite a los usuarios lanzar estudios de entrenamiento de modelos YOLO de forma visual e intuitiva.
+---
 
-## Arquitectura del Sistema
+## 1. 🚶 Diagram Walkthrough
 
 ```mermaid
-graph TD
-    subgraph "NeuralForgeAI (Frontend)"
-        UI[React App<br/>:3000]
-        STATE[State Management]
-        API[API Client]
+flowchart TD
+    subgraph "Usuario"
+        B[Browser]
     end
 
-    subgraph "Backend Services"
-        API_GW[Control Server<br/>FastAPI :8000]
-        GRADIO[Gradio Interface<br/>:7860]
+    subgraph "NeuralForgeAI"
+        H[Header]
+        S[Sidebar]
+        V[Views]
+        A[API Client]
+    end
+
+    subgraph "Backend"
+        API[Control Server<br/>FastAPI :8000]
+        G[Gradio :7860]
     end
 
     subgraph "ML Cluster"
-        MGR[Manager<br/>Optuna]
-        INV[Invokers<br/>Celery Workers]
-        WORK[Workers GPU<br/>Docker]
+        R[(Redis)]
+        M[Manager]
+        W[Workers]
     end
 
-    subgraph "Infrastructure"
-        R[(Redis<br/>:23437)]
-        PG[(PostgreSQL<br/>:23436)]
-        ML[(MLflow<br/>:23435)]
-    end
-
-    UI --> STATE
-    STATE --> API
-    API --> API_GW
-    API_GW --> R
-    R --> MGR
-    R --> INV
-    INV --> WORK
-    WORK --> PG
-    WORK --> ML
+    B -->|1. UI| H
+    B -->|2. Navegación| S
+    S -->|3. Carga vista| V
+    V -->|4. Upload YAML| A
+    A -->|5. POST /train| API
+    API -->|6. Task| R
+    R -->|7. Study| M
+    M -->|8. Training| W
+    
+    API -->|9. Response| A
+    A -->|10. Update UI| V
 ```
 
-## Flujo de Usuario
+**Flujo Principal:**
+1. Usuario accede a la interfaz en navegador
+2. Navega usando Sidebar
+3. Selecciona vista de lanzamiento
+4. Sube archivo YAML de configuración
+5. API Client envía a Control Server
+6. Control Server encola estudio
+7. Retorna Study ID
+8. Interfaz muestra confirmación
+
+---
+
+## 2. 🗺️ System Workflow
 
 ```mermaid
 sequenceDiagram
     participant U as Usuario
     participant UI as NeuralForgeAI
+    participant C as API Client
     participant API as Control Server
-    participant MGR as Manager
-    participant INV as Invoker
+    participant M as Manager
+    participant W as Worker
 
-    U->>UI: 1. Selecciona Proyecto
-    U->>UI: 2. Sube config_train.yaml
-    UI->>UI: 3. Valida YAML<br/>(model, train, sweeper)
+    U->>UI: 1. Accede a app
     
     rect rgb(200, 255, 200)
-        note over UI: Validación Exitosa
-        UI->>API: 4. POST /train<br/>(config, mode, priority)
-        API->>API: 5. Valida y procesa
-        API->>MGR: 6. Envia a cola managers
+        note over UI: Carga de datos
+        UI->>C: 2. Load projects/users
+        C-->>UI: 3. Return data
     end
-    
-    UI->>U: 7. Study ID<br/>confirmación
     
     rect rgb(255, 240, 200)
-        note over MGR,INV: Ejecución en background
-        MGR->>MGR: Optuna optimization
-        MGR->>INV: Envía trials
-        INV->>INV: Docker run executor
+        note over UI: Lanzamiento
+        U->>UI: 4. Selecciona proyecto
+        U->>UI: 5. Sube config.yaml
+        UI->>UI: 6. Valida YAML
     end
     
-    U->>UI: 8. Consulta estado<br/>(Study ID)
-    UI->>API: GET /status/{study_id}
-    API-->>UI: Estado + best_params
-    UI->>U: Muestra resultados
-```
-
-## Componentes Principales
-
-```mermaid
-graph TB
-    subgraph "NeuralForgeAI Components"
-        H[Header]
-        S[Sidebar]
-        
-        subgraph "Views"
-            D[DashboardHome]
-            L[LaunchTraining]
-            P[ProjectManagement]
-            U[UserManagement]
-            SV[ServiceViewer]
-            SE[Settings]
-        end
+    alt Validación OK
+        UI->>C: 7. POST /train
+        C->>API: 8. Submit study
+        API->>API: 9. Queue task
+        API-->>C: 10. {study_id}
+        C-->>UI: 11. Success!
+        UI->>U: 12. Study launched!
+    else Validación Error
+        UI->>U: 12. Show errors
     end
-
-    H --> S
-    S --> D
-    S --> L
-    S --> P
-    S --> U
-    S --> SV
-    S --> SE
+    
+    rect rgb(240, 200, 255)
+        note over M,W: Ejecución (background)
+    end
 ```
-
-## Características
-
-- **Gestión de Proyectos**: Crear y administrar proyectos de entrenamiento
-- **Lanzamiento de Estudios**: Subir archivos YAML y lanzar estudios de optimización
-- **Monitoreo en Tiempo Real**: Ver estado de workers y tareas
-- **Gestión de Usuarios**: Control de acceso multi-usuario
-- **Configuración Flexible**: Modo público o privado (workers específicos)
-
-## Configuración de Archivo YAML
-
-```yaml
-# Configuración de entrenamiento
-model: "yolov8n-cls.pt"
-
-train:
-  data: /datasets/clasificacion/colorball/
-  epochs: 20
-  imgsz: 640
-
-# Optimización de hiperparámetros
-sweeper:
-  study_name: "mi_clasificador"
-  n_trials: 5
-  search_space:
-    model: ["choice", "yolov8n-cls.pt", "yolo11s-cls.pt"]
-    train:
-      imgsz: ["choice", 416, 512, 640]
-      lr0: ["loguniform", 1e-5, 1e-2]
-```
-
-## Uso
-
-### Desarrollo Local
-
-```bash
-# Instalar dependencias
-npm install
-
-# Configurar variables de entorno
-cp .env.local.example .env.local
-# Editar GEMINI_API_KEY
-
-# Iniciar servidor de desarrollo
-npm run dev
-```
-
-### Docker
-
-```bash
-# Construir imagen
-docker build -t neuralforgeai:latest .
-
-# Ejecutar
-docker run -p 3000:3000 neuralforgeai:latest
-```
-
-## Integración con API
-
-NeuralForgeAI se comunica con el **Control Server** (FastAPI):
-
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/train` | POST | Lanzar estudio de entrenamiento |
-| `/workers` | GET | Listar workers activos |
-| `/status/{study_id}` | GET | Consultar estado de estudio |
-| `/tasks` | GET | Listar tareas en cola |
-
-## Monitoreo Complementario
-
-Además de NeuralForgeAI, puedes monitorear el sistema con:
-
-| Servicio | URL | Propósito |
-|----------|-----|-----------|
-| **MLflow** | http://localhost:23435 | Tracking de experimentos |
-| **Optuna Dashboard** | http://localhost:8080 | Visualización de estudios |
-| **Gradio Interface** | http://localhost:7860 | Interfaz alternativa |
 
 ---
 
-## Ejecutar y desplegar tu app de IA Studio
+## 3. 🏗️ Architecture Components
 
-Este repositorio contiene todo lo que necesitas para ejecutar tu aplicación localmente.
+```mermaid
+graph TB
+    subgraph "NeuralForgeAI"
+        subgraph "Core"
+            A[App.tsx]
+            R[Router]
+        end
+        
+        subgraph "Layout"
+            H[Header]
+            SB[Sidebar]
+        end
+        
+        subgraph "Views"
+            LH[LaunchTrainingView]
+            DH[DashboardHome]
+            PM[ProjectManagement]
+            UM[UserManagement]
+            SV[ServiceViewer]
+            ST[Settings]
+        end
+        
+        subgraph "Shared"
+            SS[SearchableSelect]
+            CP[CommandPalette]
+        end
+        
+        subgraph "Services"
+            AC[API Client<br/>constants.tsx]
+        end
+    end
 
-Ver tu app en AI Studio: https://ai.studio/apps/drive/10sBumsoNRAc51KluE3lSrCQtyS5InvF3
+    subgraph "External"
+        CS[Control Server<br/>:8000]
+    end
 
-## Prerequisites
+    A --> R
+    R --> H
+    R --> SB
+    R --> LH
+    R --> DH
+    R --> PM
+    R --> UM
+    R --> SV
+    R --> ST
+    LH --> SS
+    LH --> AC
+    AC --> CS
+```
 
-- Node.js 18+
+### Componentes Clave
 
-## Inicio Rápido
+| Componente | Descripción |
+|------------|-------------|
+| **App.tsx** | Componente raíz con Router |
+| **Header** | Barra superior con usuario |
+| **Sidebar** | Navegación lateral |
+| **LaunchTrainingView** | Vista principal de lanzamiento |
+| **DashboardHome** | Panel de control |
+| **API Client** | Cliente REST configurado |
+| **SearchableSelect** | Selector con búsqueda |
 
-1. Instalar dependencias:
-   `npm install`
-2. Configurar `GEMINI_API_KEY` en [.env.local](.env.local)
-3. Ejecutar la app:
-   `npm run dev`
+---
+
+## 4. ⚙️ Container Lifecycle
+
+### Build Process
+
+1. **Base Image**: Node.js slim
+2. **Dependencies**: Instala React, TypeScript, Tailwind
+3. **Code Copy**: Copia src/ y public/
+4. **Build**: Ejecuta `npm run build`
+5. **Serve**: Configura servidor static
+
+### Runtime Process
+
+1. **Port Exposure**: Expone puerto 3000
+2. **Env Loading**: Carga variables de entorno
+3. **API Config**: Configura URL del Control Server
+4. **Component Mount**: Monta React app
+5. **API Fetch**: Carga proyectos/usuarios iniciales
+6. **Ready**: UI disponible para usuario
+
+---
+
+## 5. 📂 File-by-File Guide
+
+| Archivo/Carpeta | Propósito |
+|-----------------|-----------|
+| `App.tsx` | Componente raíz y routing |
+| `constants.tsx` | Configuración API |
+| `components/Header.tsx` | Barra superior |
+| `components/Sidebar.tsx` | Navegación lateral |
+| `components/LaunchTrainingView.tsx` | Vista de lanzamiento |
+| `components/DashboardHome.tsx` | Panel principal |
+| `components/ProjectManagementView.tsx` | Gestión proyectos |
+| `components/UserManagementView.tsx` | Gestión usuarios |
+| `components/ServiceViewer.tsx` | Visor de servicios |
+| `components/SettingsView.tsx` | Configuración |
+| `components/SearchableSelect.tsx` | Componente selector |
+| `components/CommandPalette.tsx` | Paleta de comandos |
+| `package.json` | Dependencias Node.js |
+| `Dockerfile` | Imagen del contenedor |
+
+---
+
+## Configuración
+
+```typescript
+// constants.tsx
+export const UPLOAD_API_CONFIG = {
+  url: "http://localhost:8000/train",
+  method: "POST",
+};
+```
+
+### Variables de Entorno
+
+```bash
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_GEMINI_API_KEY=your_key
+```
+
+---
+
+## Uso
+
+### Desarrollo
+
+```bash
+npm install
+npm run dev
+```
+
+### Producción
+
+```bash
+npm run build
+docker build -t neuralforgeai:v1.0.0 .
+docker run -p 3000:3000 neuralforgeai:v1.0.0
+```
+
+---
+
+## Vistas Principales
+
+| Vista | Descripción |
+|-------|-------------|
+| **DashboardHome** | Panel principal con stats |
+| **LaunchTraining** | Lanzar estudios de entrenamiento |
+| **ProjectManagement** | Gestionar proyectos |
+| **UserManagement** | Gestionar usuarios |
+| **ServiceViewer** | Ver estado de servicios |
+| **Settings** | Configuración de la app |
 
 ---
 
