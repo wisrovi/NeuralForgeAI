@@ -104,7 +104,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     formData.append('username', user?.name || 'unknown');
     formData.append('project_id', project?.id || 'unknown');
     formData.append('project_name', project?.name || 'unknown');
-    formData.append('file', file);
+    formData.append('config_file', file);
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulating network

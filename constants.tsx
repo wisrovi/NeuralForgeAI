@@ -24,53 +24,45 @@ export const APP_NAME = "WDarwin Ops";
 // === API CONFIGURATION ===
 
 export const UPLOAD_API_CONFIG = {
-  url: `${import.meta.env.VITE_API_URL || 'http://neuroforge-api:8000'}/posts`,
+  url: `${import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442'}/train`,
   method: 'POST'
 };
 
 // Dashboard API Configuration
-const API_BASE = import.meta.env.VITE_API_URL || 'http://192.168.1.84:23450';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442';
 
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "workers", query: "count_active_nodes" }
+    url: `${API_BASE}/workers/count`,
+    method: 'GET'
   },
   gpuUtil: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "gpu", query: "avg_gpu_utilization" }
+    url: `${API_BASE}/metrics/gpu`,
+    method: 'GET'
   },
   queueDepth: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "queue", query: "redis_queue_length" }
+    url: `${API_BASE}/tasks/count`,
+    method: 'GET'
   },
   storageUsed: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "storage", query: "minio_bucket_size" }
+    url: `${API_BASE}/metrics/storage`,
+    method: 'GET'
   },
   activeJobs: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "jobs_list", status: "running", limit: 5 }
+    url: `${API_BASE}/tasks/active`,
+    method: 'GET'
   },
   redisMemory: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "redis_mem", instance: "primary_cache" }
+    url: `${API_BASE}/metrics/redis`,
+    method: 'GET'
   },
   minioBandwidth: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "minio_bw", bucket: "training_data" }
+    url: `${API_BASE}/metrics/storage`,
+    method: 'GET'
   },
   estCompletion: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "eta", job_ids: "active" }
+    url: `${API_BASE}/tasks/active`,
+    method: 'GET'
   }
 };
 
@@ -90,9 +82,9 @@ export const DEFAULT_PROJECTS: ProjectDefinition[] = [
 ];
 
 
-const MLFLOW_TRACKING_URI = import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://localhost:23435';
-const REDIS_TRACKING_URL = import.meta.env.VITE_REDIS_TRACKING_URL || 'http://localhost:23439';
-const FILEBROWSER_URL = import.meta.env.VITE_FILEBROWSER_URL || 'http://localhost:23443';
+const MLFLOW_TRACKING_URI = import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://192.168.1.137:23435/';
+const REDIS_TRACKING_URL = import.meta.env.VITE_REDIS_TRACKING_URL || 'http://192.168.1.137:23438/';
+const FILEBROWSER_URL = import.meta.env.VITE_FILEBROWSER_URL || 'http://192.168.1.137:23448/';
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
@@ -153,6 +145,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'Job orchestration and task scheduling status',
     url: REDIS_TRACKING_URL,
     icon: <Layers size={20} />,
+    minRole: 'admin'
   },
   {
     id: 'datasets',
@@ -160,7 +153,8 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     description: 'File Browser for Training Data management',
     url: FILEBROWSER_URL,
     icon: <FolderOpen size={20} />,
-  },  
+  },
+  
   // {
   //   id: 'genetic-opt',
   //   name: 'Genetic Optimization',

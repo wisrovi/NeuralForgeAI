@@ -5,22 +5,23 @@ services:
     build: 
       context: .
       args:
-        - VITE_MLFLOW_TRACKING_URI=http://192.168.1.84:23435
-        - VITE_REDIS_TRACKING_URL=http://192.168.1.84:23439/
-        - VITE_FILEBROWSER_URL=http://192.168.1.84:23443/files/
-    image: wisrovi/w_darwin_ops-frontend:latest
+        - VITE_MLFLOW_TRACKING_URI=http://${CONTROL_HOST:-localhost}:23435
+        - VITE_REDIS_TRACKING_URL=http://${CONTROL_HOST:-localhost}:23438/
+        - VITE_FILEBROWSER_URL=http://${CONTROL_HOST:-localhost}:23448/files/
+    image: wisrovi/train_service:w_darwin_ops_frontend_v1.0.0
     ports:
-      - "5810:4173"
+      - "23432:4173"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - VITE_API_URL=http://neuroforge-api:8000
-      - VITE_MLFLOW_TRACKING_URI=http://192.168.1.84:23435
-      - VITE_REDIS_TRACKING_URL=http://192.168.1.84:23439/
-      - VITE_FILEBROWSER_URL=http://192.168.1.84:23443/files/
+      - VITE_API_URL=http://${CONTROL_HOST:-localhost}:23442/
+      - VITE_MLFLOW_TRACKING_URI=http://${CONTROL_HOST:-localhost}:23435/
+      - VITE_REDIS_TRACKING_URL=http://${CONTROL_HOST:-localhost}:23438/
+      - VITE_FILEBROWSER_URL=http://${CONTROL_HOST:-localhost}:23448/files/
     env_file:
-      - .env
+      - ./control_host.env
+    networks:
+      - control_network
 
 networks:
-  default:
+  control_network:
     external: true
-    name: wyoloservice_network
