@@ -1,545 +1,558 @@
-# 🧠 NeuroForge AI
+# W-Darwin Ops by NeuroForge AI
 
 <div align="center">
-  <img src="docs/sources/docker-logo.png" alt="NeuroForge AI Logo" width="120" height="120">
+  <img src="docs/sources/docker-logo.png" alt="WDarwin Ops Logo" width="140" height="140">
   
-  **Advanced AI Training Orchestration Platform**
+  **Evolutionary Orchestration System for Remote YOLO Training**
   
-  Centralized command center for distributed YOLO model training with genetic algorithms and intelligent resource management
+  Centralized command center for distributed YOLO model training, genetic optimization, and ML lifecycle management
 </div>
 
 ---
 
-## 📋 Project Overview
+## Project Overview
 
-NeuroForge AI is a sophisticated web-based platform designed to orchestrate complex machine learning training workflows across distributed GPU clusters. Built with React and TypeScript, it serves as a centralized hub for managing YOLO (You Only Look Once) model training, experiment tracking, resource monitoring, and team collaboration.
+**W-Darwin Ops** (also branded as **NeuroForge AI**) is a sophisticated web-based orchestration platform designed to manage complex machine learning training workflows across distributed GPU clusters. Built with React 19 and TypeScript, it serves as a unified hub for YOLO (You Only Look Once) model training, experiment tracking, resource monitoring, and team collaboration.
 
-The platform bridges the gap between raw computational power and intelligent model evolution by providing a unified interface for:
-- **Distributed Training Management**: Coordinate training jobs across multiple GPU nodes
+### Core Capabilities
+
+- **Distributed Training Management**: Coordinate training jobs across multiple GPU worker nodes
 - **Genetic Algorithm Optimization**: Automatically evolve hyperparameters using evolutionary strategies
 - **Real-time Monitoring**: Track cluster performance, GPU utilization, and training progress
-- **Team Collaboration**: Manage user access, project namespaces, and experiment tracking
-- **Infrastructure Integration**: Seamlessly connect with MLflow, MinIO, Redis, and Ray Tune
+- **Team Collaboration**: Role-based access control with project namespace management
+- **Infrastructure Integration**: Native connectivity with MLflow, MinIO, Redis Queue, and Ray Tune
 
 ---
 
-### 1. 🚶 Diagram Walkthrough (Main Process Flow)
+## System Architecture
+
+### Main Process Flow Diagram
 
 ```mermaid
-flowchart TD
-    A[User Action] --> B{Action Type}
-    
-    B -->|Launch Training| C[Upload YAML Config]
-    B -->|View Dashboard| D[Fetch Metrics]
-    B -->|Manage Users| E[User CRUD Operations]
-    B -->|Manage Projects| F[Project CRUD Operations]
-    B -->|View Services| G[Load Service Iframe]
-    
-    C --> H[Validate Configuration]
-    H --> I[Submit to API Gateway]
-    I --> J[Queue Job in Redis]
-    J --> K[Ray Tune Scheduling]
-    K --> L[GPU Worker Assignment]
-    
-    D --> M[API Gateway Aggregation]
-    M --> N[Collect Metrics from Services]
-    N --> O[Update Dashboard State]
-    
-    E --> P[localStorage Operations]
-    F --> P
-    G --> Q[Service URL Resolution]
-    
-    L --> R[Training Execution]
-    R --> S[Log to MLflow]
-    R --> T[Store Artifacts in MinIO]
-    R --> U[Update Redis Queue Status]
-    
-    S --> V[Real-time Updates]
-    T --> V
-    U --> V
-    V --> O
+graph TD
+    A[React Frontend] --> B[App State Manager]
+    C[Command Palette] --> A
+    B --> D[Local Storage]
+    B --> E[Dashboard Home]
+    B --> F[Launch Training]
+    B --> G[User Management]
+    B --> H[Project Management]
+    B --> I[Settings]
+    B --> J[API Docs]
+    B --> K[About]
+    B --> L[MLflow Tracking]
+    B --> M[Redis Queue]
+    B --> N[File Browser]
+    E --> O[API Gateway]
+    F --> O
+    O --> P[Redis Job Queue]
+    O --> Q[MinIO Storage]
+    P --> R[Ray Tune Scheduler]
+    R --> S[GPU Worker Nodes]
+    S --> L
+    S --> Q
+    P --> E
 ```
 
-### 2. 🗺️ System Workflow (Detailed Event Sequence)
+### Training Job Sequence Diagram
 
 ```mermaid
 sequenceDiagram
-    participant U as User Interface
-    participant A as App Component
-    participant S as Settings Service
-    participant R as Redis Queue
-    participant M as MLflow
-    participant I as MinIO Storage
-    participant G as GPU Workers
-    participant T as Ray Tune
-    
-    Note over U,T: Training Job Submission Flow
-    
-    U->>A: Upload YAML Configuration
-    A->>A: Validate User Role & Project
-    A->>S: Get Service Endpoints
-    S-->>A: Return API URLs
-    
-    A->>R: Submit Job to Queue
-    R-->>A: Confirm Job Queued
-    
-    Note over R,T: Job Processing
-    
-    T->>R: Poll for Available Jobs
-    R-->>T: Return Job Details
-    
-    T->>G: Assign Worker Node
-    G-->>T: Confirm Assignment
-    
-    G->>I: Download Dataset from MinIO
-    I-->>G: Return Dataset Files
-    
-    G->>G: Execute Training Loop
-    
-    loop Every Epoch
-        G->>M: Log Metrics & Artifacts
-        M-->>G: Confirm Logging
-        G->>R: Update Job Status
-        R-->>G: Confirm Update
-    end
-    
-    Note over G,U: Real-time Dashboard Updates
-    
-    G->>R: Push Status Updates
-    R->>A: WebSocket/Real-time Push
-    A->>U: Update Dashboard UI
+    participant User
+    participant Frontend
+    participant AppState
+    participant FastAPI
+    participant Redis
+    participant RayTune
+    participant GPUWorker
+    participant MLflow
+    participant MinIO
+
+    User->>Frontend: Navigate to Launch Training
+    Frontend->>AppState: Request default config
+    AppState-->>Frontend: Return users and projects
+    User->>Frontend: Select User and Project
+    User->>Frontend: Upload YAML Configuration
+    Frontend->>FastAPI: POST launch-training
+    FastAPI->>Redis: Push job to queue
+    Redis-->>FastAPI: Confirm queued
+    FastAPI-->>Frontend: Return job ID
+    RayTune->>Redis: Poll for available jobs
+    Redis-->>RayTune: Return job details
+    RayTune->>GPUWorker: Assign to GPU worker
+    GPUWorker->>MinIO: Download dataset
+    GPUWorker->>MLflow: Create MLflow run
+    MLflow-->>GPUWorker: Return run ID
+    GPUWorker->>MinIO: Upload model weights
+    GPUWorker->>Redis: Mark job as completed
 ```
 
-### 3. 🏗️ Architecture Components
+### Dashboard Metrics Flow
 
 ```mermaid
-mindmap
-  root((NeuroForge AI))
-    Frontend Layer
-      React 19
-      TypeScript
-      Vite Build System
-      Tailwind CSS
-      Lucide Icons
-    
-    State Management
-      React Hooks
-      localStorage Persistence
-      Context API
-      Component State
-    
-    Core Components
-      DashboardHome
-      LaunchTrainingView
-      UserManagementView
-      ProjectManagementView
-      SettingsView
-      ServiceViewer
-      CommandPalette
-      TerminalWidget
-    
-    Integration Services
-      MLflow Tracking
-      Redis Queue
-      MinIO Storage
-      Ray Tune Optimizer
-      Genetic Algorithms
-    
-    Infrastructure
-      Docker Containerization
-      Node.js Runtime
-      REST API Gateway
-      WebSocket Connections
-    
-    External Services
-      Gemini AI Integration
-      JSONPlaceholder Mock APIs
-      GPU Worker Nodes
-      Distributed Storage
+sequenceDiagram
+    participant Dashboard
+    participant AppState
+    participant FastAPI
+    participant Redis
+
+    Dashboard->>Dashboard: useEffect with 30s interval
+    Dashboard->>FastAPI: Request workers metric
+    Dashboard->>FastAPI: Request GPU metric
+    Dashboard->>FastAPI: Request queue metric
+    Dashboard->>FastAPI: Request jobs list
+    FastAPI->>FastAPI: Generate mock metrics
+    FastAPI-->>Dashboard: Return value and timestamp
+    Dashboard->>Dashboard: Update state for each metric
+    Dashboard->>AppState: Toggle favorite service
+    AppState->>AppState: Save to localStorage
 ```
 
-### 4. ⚙️ Container Lifecycle
+### System Context Diagram
 
-#### Build Process
+```mermaid
+graph TD
+    A[React SPA TypeScript]
+    B[React Components]
+    C[React Hooks]
+    D[Local Storage]
+    E[FastAPI Backend]
+    F[REST Endpoints]
+    G[Iframe Embedding]
+    H[MLflow Tracking]
+    I[Redis Queue]
+    J[MinIO Storage]
+    K[Ray Tune]
+    L[GPU Workers]
+    M[Google Gemini AI]
 
-1. **Base Image Selection**: `node:18-alpine` for minimal footprint
-2. **Dependency Installation**: Copy `package*.json` and run `npm install`
-3. **Source Code Copy**: Copy entire application source
-4. **Build Execution**: Run `npm run build` to create optimized production assets
-5. **Asset Optimization**: Vite bundles React components, TypeScript, and CSS
-6. **Final Image**: Multi-stage build results in minimal production image
+    A --> B
+    A --> C
+    C --> D
+    A --> E
+    E --> F
+    B --> G
+    E --> I
+    E --> J
+    F --> I
+    G --> H
+    G --> I
+    G --> J
+    I --> K
+    K --> L
+    L --> H
+    L --> J
+    A --> M
+```
 
-#### Runtime Process
+### Component Dependency Graph
 
-1. **Container Startup**: Docker container starts with Node.js runtime
-2. **Environment Loading**: Load environment variables from `.env` file
-3. **Static Asset Serving**: Vite preview server serves built assets from `/app/dist`
-4. **Port Binding**: Internal port 4173 bound to external port 5810
-5. **Application Initialization**: React app loads in browser
-6. **Splash Screen**: 2.8-second splash screen displays
-7. **State Restoration**: Load user preferences from localStorage
-8. **Service Discovery**: Resolve microservice URLs from configuration
-9. **API Initialization**: Establish connections to external services
-10. **Ready State**: Application fully operational and responsive
+```mermaid
+graph LR
+    A[index.tsx ReactDOM]
+    B[index.html Tailwind]
+    C[App.tsx State Routing]
+    D[types.ts Interfaces]
+    E[constants.tsx Defaults]
+    F[Header.tsx]
+    G[Sidebar.tsx]
+    H[CommandPalette.tsx]
+    I[Footer.tsx]
+    J[DashboardHome.tsx]
+    K[LaunchTrainingView.tsx]
+    L[UserManagement.tsx]
+    M[ProjectManagement.tsx]
+    N[SettingsView.tsx]
+    O[ApiDocsView.tsx]
+    P[AboutView.tsx]
+    Q[TerminalWidget.tsx]
+    R[PresentationMode.tsx]
+    S[SplashScreen.tsx]
+    T[ServiceViewer.tsx]
+    U[SearchableSelect.tsx]
+    V[DataIngestionView.tsx]
+    W[vite.config.ts]
+    X[tsconfig.json]
+    Y[package.json]
+    Z[Dockerfile Frontend]
+    AA[Dockerfile Backend]
+    BB[docker-compose.yaml]
+    CC[Makefile]
+    DD[main.py FastAPI]
+    EE[requirements.txt]
 
-### 5. 📂 File-by-File Guide
+    A --> C
+    B --> A
+    C --> D
+    C --> E
+    C --> F
+    C --> G
+    C --> J
+    C --> K
+    C --> L
+    C --> M
+    C --> N
+    C --> O
+    C --> P
+    C --> T
+    C --> H
+    C --> Q
+    C --> R
+    C --> S
+    C --> I
+    F --> H
+    G --> H
+    K --> U
+    J --> Q
+    W --> Y
+    X --> Y
+    Z --> W
+    AA --> DD
+    AA --> EE
+    BB --> Z
+    CC --> BB
+```
 
-| File/Folder | Purpose & Content |
-|-------------|-------------------|
-| **App.tsx** | Main application component with state management and routing logic |
-| **index.tsx** | React application entry point and DOM mounting |
-| **index.html** | HTML template with meta tags and root element |
-| **types.ts** | TypeScript type definitions for interfaces and enums |
-| **constants.tsx** | Application constants, default data, and API configurations |
-| **package.json** | Dependencies, scripts, and project metadata |
-| **tsconfig.json** | TypeScript compiler configuration and build options |
-| **vite.config.ts** | Vite build tool configuration and plugins |
-| **Dockerfile** | Multi-stage container build instructions |
-| **docker-compose.yaml** | Container orchestration with port mapping and environment |
-| **.env** | Environment variables and API keys (user-created) |
-| **components/** | React components directory |
-| ├── **AboutView.tsx** | Developer profile and system information display |
-| ├── **ApiDocsView.tsx** | API documentation viewer component |
-| ├── **CommandPalette.tsx** | Quick search and navigation interface |
-| ├── **DashboardHome.tsx** | Main dashboard with real-time metrics and job monitoring |
-| ├── **DataIngestionView.tsx** | Data upload and management interface |
-| ├── **Header.tsx** | Top navigation bar with theme toggle and user info |
-| ├── **LaunchTrainingView.tsx** | Training job submission with YAML configuration |
-| ├── **PresentationMode.tsx** | Full-screen presentation component |
-| ├── **ProjectManagementView.tsx** | Project CRUD operations interface |
-| ├── **SearchableSelect.tsx** | Dropdown search component with filtering |
-| ├── **ServiceViewer.tsx** | Microservice iframe viewer component |
-| ├── **SettingsView.tsx** | Configuration management and service URL setup |
-| ├── **Sidebar.tsx** | Navigation sidebar with service list and favorites |
-| ├── **SplashScreen.tsx** | Loading splash screen with animations |
-| ├── **TerminalWidget.tsx** | Integrated command-line interface widget |
-| └── **UserManagementView.tsx** | User CRUD operations and role management |
-| **docs/** | Documentation assets and static resources |
-| └── **sources/** | Images, logos, and documentation media files |
+### Docker Build Flow
+
+```mermaid
+graph LR
+    A[FROM node alpine]
+    B[WORKDIR app]
+    C[COPY package json]
+    D[RUN npm install]
+    E[COPY source code]
+    F[ARG VITE variables]
+    G[ENV VITE variables]
+    H[RUN npm run build]
+    I[EXPOSE 4173]
+    J[CMD npm run preview]
+    K[Output Docker Image]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> K
+```
+
+### Runtime Startup Flow
+
+```mermaid
+graph TD
+    A[Container Start] --> B[Docker Engine executes CMD]
+    B --> C[npm run preview]
+    C --> D[Vite preview server starts]
+    D --> E[Bind to all interfaces]
+    E --> F[User navigates to URL]
+    F --> G[Vite serves index.html]
+    G --> H[Browser loads React SPA]
+    H --> I[Splash screen timeout]
+    I --> J[App.tsx mount useEffect runs]
+    J --> K[Load services from localStorage or defaults]
+    K --> L[Check GEMINI API key]
+    L --> M[Dashboard starts metrics polling]
+    M --> N[Application Ready]
+```
 
 ---
 
-## ✨ Key Features
+## Core Technical Stack
 
-### 🎯 Core Functionality
-- **Dashboard Overview**: Real-time telemetry from distributed training clusters
-- **Launch Training**: Deploy new experiments with YAML configuration files
-- **Project Registry**: Manage experiment namespaces and project lifecycles
-- **User Management**: Role-based access control (Admin/Guest roles)
-- **API Reference**: Comprehensive REST API documentation
-
-### 🔧 Infrastructure Integration
-- **MLflow Tracking**: Experiment logging, metrics, and artifact storage
-- **MinIO Storage**: High-performance object storage for datasets and models
-- **Redis Queue**: Job orchestration and task scheduling
-- **Genetic Optimization**: Hyperparameter tuning with evolutionary algorithms
-- **Ray Tune**: Scalable hyperparameter optimization with massive parallelism
-
-### 🎨 User Experience
-- **Dark/Light Theme**: Toggle between visual themes
-- **Command Palette**: Quick navigation with Cmd/Ctrl+K
-- **Terminal Widget**: Integrated command-line interface
-- **Presentation Mode**: Full-screen presentation capabilities
-- **Responsive Design**: Optimized for desktop and mobile devices
+| Layer | Technologies |
+|-------|--------------|
+| **Frontend** | React 19.2.1, TypeScript 5.8.2, Vite 6.2.0, Tailwind CSS, Lucide React |
+| **Backend** | Python 3.11, FastAPI 0.104.1, Uvicorn, Pydantic |
+| **Containerization** | Docker Multi-stage Builds, Docker Compose 3.8 |
+| **ML Infrastructure** | MLflow (Tracking), Redis (Queue), MinIO (Storage), Ray Tune (Optimization) |
+| **External Services** | Google Gemini AI API |
 
 ---
 
-## 🚀 Getting Started
+## File-by-File Guide
+
+### Root Level Files
+
+| File/Directory | Purpose & Content |
+|----------------|-------------------|
+| **App.tsx** | Main application component with comprehensive state management and view routing. Contains useState for theme, role, services, users, projects, favorites, Gemini toggle, splash screen, command palette, and terminal visibility. |
+| **index.tsx** | React application entry point. Uses ReactDOM.createRoot() to render App component into DOM element with id root. |
+| **index.html** | HTML5 entry point with Tailwind CSS CDN, dark mode class by default, div with id root, and viewport meta tags. |
+| **types.ts** | TypeScript type definitions: UserRole, Microservice, ThemeContextType, UserProfile, ProjectDefinition interfaces. |
+| **constants.tsx** | Application constants including APP_NAME equals WDarwin Ops, API_BASE, DEFAULT_USERS (3 users), DEFAULT_PROJECTS (4 projects), DEFAULT_MICROSERVICES (12 services), DEVELOPER_PROFILE, PRESENTATION_SLIDES (10 slides), MOCK_LOGS. |
+| **package.json** | NPM config: name w-darwin-ops, dependencies: react 19.2.1, react-dom 19.2.1, lucide-react 0.555.0, devDependencies: typescript 5.8.2, vite 6.2.0. Scripts: dev, build, preview. |
+| **tsconfig.json** | TypeScript strict mode configuration. Target ES2022, module ESNext, JSX react-jsx, strict enabled, types node and vite/client, paths at alias. |
+| **vite.config.ts** | Vite configuration. Uses vitejs/plugin-react, server port 3000, preview port 4173, path alias at to current directory. |
+| **Dockerfile** | Multi-stage frontend build. node:18-alpine base, build args VITE_MLFLOW_TRACKING_URI, VITE_REDIS_TRACKING_URL, VITE_FILEBROWSER_URL, VITE_API_URL. Exposes 4173, runs npm run preview with host 0.0.0.0. |
+| **docker-compose.yaml** | Service neuroforge-frontend built from current directory, image wisrovi/train_service:w_darwin_ops_frontend_v1.0.0, ports 23432 to 4173, environment with CONTROL_HOST interpolation, env_file control_host.env, network control_network (external). |
+| **Makefile** | Docker convenience commands. make start runs docker-compose with env-file control_host.env up -d --build. make stop runs docker-compose with env-file control_host.env down. |
+| **control_host.env** | Environment configuration. CONTROL_HOST equals 192.168.1.137, CIFS_USER equals wisrovi, CIFS_PASS equals wyoloservice, GEMINI_API_KEY value present. |
+
+### Components Directory
+
+| Component | Purpose & Content |
+|-----------|-------------------|
+| **DashboardHome.tsx** | Main dashboard with 8 metric cards (Active Workers, GPU Utilization, Queue Depth, Storage Used, Active Jobs List, Redis Memory, MinIO Bandwidth, ETA Completion). Uses setInterval for polling, mock fetch calls. |
+| **LaunchTrainingView.tsx** | Training job submission interface. User or Project selection via SearchableSelect, YAML file upload with drag-and-drop, YAML syntax validation, launch-training POST to API. |
+| **UserManagementView.tsx** | CRUD interface for users. Create, Edit, Delete operations on UserProfile array. Role selection: admin or dev. LocalStorage persistence via App state callbacks. |
+| **ProjectManagementView.tsx** | CRUD interface for projects. Create, Edit, Delete ProjectDefinition array. Shows name, description, createdAt date. |
+| **SettingsView.tsx** | Global configuration. Service URL editor (MLflow, Redis, File Browser, API URL), Gemini AI toggle with API key input, CIFS credentials config. Persists to localStorage. |
+| **ApiDocsView.tsx** | Inline REST API documentation viewer. Simulated or generated API docs for training, metrics, jobs endpoints. |
+| **AboutView.tsx** | Developer profile display. Shows DEVELOPER_PROFILE data: Wisrovi Rodriguez, Software Engineer and System Architect, LinkedIn link, avatar. |
+| **ServiceViewer.tsx** | Iframe-based external service viewer. Loads microservice UIs (MLflow, Redis Queue, Datasets) in sandboxed iframe with fallback or placeholder when service unavailable. |
+| **Sidebar.tsx** | Navigation sidebar. Lists all DEFAULT_MICROSERVICES, favorites toggle, role-based visibility (minRole check), collapse or expand, active service highlighting. |
+| **Header.tsx** | Top navigation bar. Search icon that opens CommandPalette, theme toggle (sun or moon), user profile dropdown with role indicator. |
+| **CommandPalette.tsx** | Quick search or navigation modal. Keyboard shortcut Cmd+K or Ctrl+K. Filter or search services, theme toggle shortcut, terminal toggle. |
+| **TerminalWidget.tsx** | Integrated terminal-like log viewer. Displays MOCK_LOGS from constants, auto-scroll, simulated terminal appearance. |
+| **PresentationMode.tsx** | Full-screen presentation slideshow. Renders PRESENTATION_SLIDES array (10 slides explaining architecture, YOLO, genetic algorithms, Ray Tune, MinIO, Redis, MLflow, the developer). |
+| **SplashScreen.tsx** | Animated loading screen. useEffect with 2800ms timeout, DNA helix logo animation, WDarwin Ops title with subtitle Evolutionary Intelligence. |
+| **SearchableSelect.tsx** | Reusable dropdown component with search filter. Used in LaunchTrainingView for user and project selection. |
+| **DataIngestionView.tsx** | Data upload and management interface. File upload component for training data ingestion. |
+| **Footer.tsx** | Global footer component. Copyright and version information. |
+
+### Backend Directory
+
+| File | Purpose & Content |
+|------|-------------------|
+| **main.py** | FastAPI backend application (490 lines). app equals FastAPI with title NeuroForge AI Backend. CORS middleware for localhost port 5173 and 5810. Pydantic models: MetricRequest, TrainingJobRequest, DataUploadRequest. mock_jobs array (5 predefined jobs with random mutation). Endpoints: POST posts (generic metrics handler: workers, gpu, queue, storage, jobs_list, redis_mem, minio_bw, eta), POST upload (file upload), POST launch-training (queues training), GET jobs, GET jobs by job_id, GET health, GET mlflow, GET redis, GET filebrowser, GET root. Runs with uvicorn.run on 0.0.0.0 port 8000. |
+| **requirements.txt** | Python dependencies: fastapi 0.104.1, uvicorn 0.24.0, python-multipart 0.0.6, pydantic 2.5.0. |
+| **Dockerfile** | Backend container build: python:3.11-slim, pip install -r requirements.txt, import test RUN python3 -c "import main;...", exposes 8000, cmd python3 main.py. |
+
+---
+
+## Key Features
+
+### Core Orchestration Features
+- **Unified Dashboard**: Real-time telemetry from distributed training clusters with 8 metric visualizations
+- **Training Orchestration**: Deploy YOLO training experiments with YAML-based hyperparameter configuration
+- **Genetic Optimization**: Built for evolutionary hyperparameter search with mutation, crossover, selection patterns
+- **Project Registry**: Namespace-based experiment organization with lifecycle tracking
+- **Role-Based Access**: Admin or Dev role system with minRole permission checks on sensitive services
+
+### Infrastructure Integration
+- **MLflow Tracking**: Native iframe integration for experiment logging, metrics comparison, and artifact management
+- **Redis Queue**: Job orchestration, task scheduling, and real-time status monitoring
+- **MinIO Storage**: High-performance object storage for datasets and model weights via File Browser interface
+- **Ray Tune Ready**: Architected for scalable hyperparameter optimization with massive parallelism
+- **Gemini AI Integration**: Optional Google Gemini AI assistant toggle with API key configuration
+
+### Developer Experience
+- **Dark or Light Theme**: Persistent theme toggle stored in localStorage
+- **Command Palette**: Cmd or Ctrl + K quick navigation and action system
+- **Terminal Widget**: Integrated log viewer with simulated terminal interface
+- **Presentation Mode**: Full-screen slideshow for architecture and workflow presentations
+- **LocalStorage Persistence**: All user preferences, service URLs, and custom configurations automatically saved
+
+---
+
+## Installation & Setup
 
 ### Prerequisites
-- **Node.js** (v18 or higher)
-- **npm** or **yarn** package manager
-- **Docker** and **Docker Compose** (for containerized deployment)
 
-### Local Development Setup
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| **Node.js** | v18+ | JavaScript runtime for frontend development |
+| **npm** | v9+ | Package manager (included with Node.js) |
+| **Docker** | 20.10+ | Container runtime |
+| **Docker Compose** | v2.0+ | Container orchestration |
+| **Python** | 3.11 | Backend development (optional) |
 
-1. **Clone the Repository**
-   ```bash
-   git clone <repository-url>
-   cd NeuralForgeAI
-   ```
+### Environment Configuration
 
-2. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+The application requires specific environment variables for microservice connectivity. The default values assume a control node at 192.168.1.137.
 
-3. **Environment Configuration**
-   ```bash
-   # Copy the environment template
-   cp .env.example .env
-   
-   # Edit the .env file with your configuration
-   nano .env
-   ```
-
-4. **Start Development Server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Access the Application**
-   - Open your browser and navigate to `http://localhost:5173`
-   - The splash screen will display for 2.8 seconds before loading the main interface
-
-### Docker Deployment
-
-1. **Build and Run with Docker Compose**
-   ```bash
-   docker-compose up --build -d
-   ```
-
-2. **Access the Application**
-   - Navigate to `http://localhost:5810`
-   - The application runs in production mode using the built assets
-
----
-
-## 📁 File Structure
-
-```
-NeuralForgeAI/
-├── components/                 # React Components
-│   ├── AboutView.tsx          # About/Developer information
-│   ├── ApiDocsView.tsx        # API documentation viewer
-│   ├── CommandPalette.tsx     # Quick search navigation
-│   ├── DashboardHome.tsx      # Main dashboard with metrics
-│   ├── DataIngestionView.tsx   # Data upload/management
-│   ├── Header.tsx              # Top navigation bar
-│   ├── LaunchTrainingView.tsx  # Training job submission
-│   ├── PresentationMode.tsx   # Full-screen presentation
-│   ├── ProjectManagementView.tsx # Project CRUD operations
-│   ├── SearchableSelect.tsx    # Dropdown search component
-│   ├── ServiceViewer.tsx       # Microservice iframe viewer
-│   ├── SettingsView.tsx        # Configuration management
-│   ├── Sidebar.tsx             # Navigation sidebar
-│   ├── SplashScreen.tsx        # Loading splash screen
-│   ├── TerminalWidget.tsx      # Integrated terminal
-│   └── UserManagementView.tsx   # User CRUD operations
-├── docs/                       # Documentation assets
-│   └── sources/               # Images and logos
-├── App.tsx                    # Main application component
-├── constants.tsx              # Application constants and defaults
-├── types.ts                   # TypeScript type definitions
-├── index.html                 # HTML entry point
-├── index.tsx                  # React application entry
-├── package.json               # Dependencies and scripts
-├── tsconfig.json              # TypeScript configuration
-├── vite.config.ts             # Vite build configuration
-├── docker-compose.yaml        # Docker orchestration
-├── Dockerfile                 # Container build instructions
-└── .env                       # Environment variables (create this)
-```
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
+**Create environment file:**
 
 ```bash
-# Required: Google Gemini API Key for AI integration
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Optional: Custom API endpoints
-UPLOAD_API_URL=https://your-api-endpoint.com/upload
-DASHBOARD_API_URL=https://your-dashboard-api.com
+# Copy and edit the control_host.env file
+# The existing file uses defaults for 192.168.1.137
+cp control_host.env .env.local
 ```
 
-### Default Configuration
+### Option 1: Docker Deployment (Recommended)
 
-The application includes sensible defaults for:
+**Step 1: Build and Start Containers**
 
-- **Microservices**: Pre-configured services (MLflow, MinIO, Redis, etc.)
-- **Users**: Default admin and guest accounts
-- **Projects**: Sample YOLO training projects
-- **API Endpoints**: Mock endpoints for demonstration
+```bash
+# Using Makefile (simplest)
+make start
 
-### Service URLs
+# Or directly with docker-compose
+docker-compose --env-file ./control_host.env up -d --build
+```
 
-Microservice URLs can be configured through the Settings interface:
-- Navigate to **Settings** → **Service Configuration**
-- Update URLs for each microservice
-- Changes are automatically persisted to localStorage
+**Step 2: Stop Containers**
+
+```bash
+# Using Makefile
+make stop
+
+# Or directly
+docker-compose --env-file ./control_host.env down
+```
+
+### Option 2: Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Start backend (in another terminal)
+cd backend/api
+pip install -r requirements.txt
+python main.py
+```
 
 ---
 
-## 📖 Usage Examples
+## Usage Examples
+
+### Makefile Commands
+
+| Command | Action |
+|---------|--------|
+| `make start` | Build and start all containers in detached mode |
+| `make stop` | Stop and remove containers, networks |
+
+### npm Scripts
+
+| Script | Action |
+|--------|--------|
+| `npm run dev` | Start Vite development server (HMR enabled) |
+| `npm run build` | Build optimized production bundle to dist |
+| `npm run preview` | Serve dist using Vite preview server |
 
 ### Launching a Training Job
 
-1. **Navigate to Launch Training**
-   - Click "Launch Training" in the sidebar
-   - Select your user profile from the dropdown
-   - Choose the target project
+1. Navigate: Click Launch Training in the sidebar
+2. Select User: Choose from the dropdown
+3. Select Project: Choose target namespace
+4. Upload YAML: Drag-and-drop or click to select a .yaml file
+5. Submit: Click Launch Training Job
+6. Monitor: Return to Dashboard for real-time progress tracking
 
-2. **Upload Configuration**
-   ```yaml
-   debug: wisrovi
-   model: "yolov8n-cls.pt"
-   
-   train:
-     data: /datasets/clasificacion/colorball.v8i.multiclass/
-     epochs: 20
-     imgsz: 640
-   
-   sweeper:
-     version: 2
-     study_name: "example_classification"
-     n_trials: 5
-     search_space:
-       model: ["choice", "yolov8n-cls.pt"]
-       train:
-         imgsz: ["choice", 416, 512, 640]
-         lr0: ["loguniform", 1e-5, 1e-2]
-   ```
-
-3. **Submit Job**
-   - Drag and drop the YAML file or click to browse
-   - Click "Launch Training Job"
-   - Monitor progress in the Dashboard
-
-### Managing Users and Projects
-
-1. **User Management** (Admin only)
-   - Navigate to **Team Access** in the sidebar
-   - Add, edit, or remove user accounts
-   - Assign roles (Admin/Dev)
-
-2. **Project Management** (Admin only)
-   - Navigate to **Project Registry**
-   - Create new experiment namespaces
-   - Track project lifecycles
-
-### Using the Command Palette
-
-- **Keyboard Shortcut**: Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux)
-- **Quick Navigation**: Search for any service or setting
-- **Theme Toggle**: Switch between dark and light modes
-- **Terminal Access**: Open the integrated terminal widget
-
----
-
-## 🔧 Development Commands
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start development server with hot reload
-npm run build        # Build for production
-npm run preview      # Preview production build locally
-
-# Docker
-docker-compose up --build -d    # Build and run containers
-docker-compose down              # Stop and remove containers
-docker-compose logs -f app       # View application logs
-```
-
-### TypeScript Configuration
-
-The project uses strict TypeScript configuration:
-- **Target**: ES2020
-- **Module**: ESNext
-- **Strict Mode**: Enabled
-- **React Support**: JSX with React 19
-
----
-
-## 🐳 Docker Configuration
-
-### Multi-stage Build
-
-The Dockerfile uses a multi-stage build process:
-
-1. **Builder Stage**: 
-   - Uses Node.js 18 Alpine
-   - Installs dependencies and builds the application
-   - Optimizes for layer caching
-
-2. **Production Stage**:
-   - Serves built assets with Vite preview
-   - Exposes port 4173 internally
-   - Configured for 0.0.0.0 host binding
-
-### Container Orchestration
+**Example YAML Configuration:**
 
 ```yaml
-version: '3.8'
-services:
-  app:
-    build: .
-    image: wisrovi/neuralforgeai:latest
-    ports:
-      - "5810:4173"
-    environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    env_file:
-      - .env
+debug: wisrovi
+model: "yolov8n-cls.pt"
+
+train:
+  data: /datasets/clasificacion/colorball.v8i.multiclass/
+  epochs: 20
+  imgsz: 640
+
+sweeper:
+  version: 2
+  study_name: "example_classification"
+  n_trials: 5
+  search_space:
+    model: ["choice", "yolov8n-cls.pt"]
+    train:
+      imgsz: ["choice", 416, 512, 640]
+      lr0: ["loguniform", 1e-5, 1e-2]
 ```
 
 ---
 
-## 🤝 Contributing
+## API Reference
 
-### Development Guidelines
+### Backend Endpoints
 
-1. **Code Style**: Follow existing TypeScript and React patterns
-2. **Component Structure**: Maintain consistent component organization
-3. **State Management**: Use React hooks for local state, localStorage for persistence
-4. **API Integration**: Follow the existing API configuration patterns
-5. **Testing**: Add unit tests for new components and utilities
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/` | GET | Root endpoint - returns API info and endpoint list |
+| `/posts` | POST | Generic metric endpoint - handles all dashboard polling |
+| `/upload` | POST | File upload endpoint |
+| `/launch-training` | POST | Submit training job |
+| `/jobs` | GET | List all jobs |
+| `/jobs/{job_id}` | GET | Get specific job details |
+| `/health` | GET | Health check |
+| `/mlflow` | GET | MLflow service info |
+| `/redis` | GET | Redis Queue service info |
+| `/filebrowser` | GET | File Browser service info |
 
-### Submitting Changes
+### Default Users
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Commit changes: `git commit -m 'Add feature description'`
-4. Push to branch: `git push origin feature-name`
-5. Submit a pull request
+| ID | Name | Email | Role |
+|-----|------|-------|------|
+| u1 | Wisrovi Rodriguez | wisrovi at darwin-ops.ai | admin |
+| u2 | Guest Researcher | guest at darwin-ops.ai | dev |
+| u3 | AI Worker Bot | bot-01 at darwin-ops.ai | dev |
+
+### Default Projects
+
+| ID | Name | Description | Created |
+|-----|------|-------------|---------|
+| p1 | wTicketFlow | Backend-free ticket management | 2025-11-01 |
+| p2 | wDarwin Ops | AI Training Orchestration | 2025-12-15 |
+| p3 | wAgents | AI development workbench | 2025-11-15 |
+| p4 | NexusFlow | Organizational Diagnostic System | 2025-12-01 |
 
 ---
 
-## 📄 License
+## Port Reference
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 🙋‍♂️ Support
-
-For questions, issues, or contributions:
-
-- **Developer**: Wisrovi Rodríguez
-- **Email**: wisrovi@neuroforge.ai
-- **LinkedIn**: [Wisrovi Rodríguez](https://www.linkedin.com/in/wisrovi-rodriguez/)
-- **Issues**: Report bugs and feature requests via GitHub Issues
+| Port | Service | Interface |
+|------|---------|-----------|
+| **23432** | Frontend (Vite preview) | Externally accessible |
+| **23435** | MLflow Tracking UI | External service |
+| **23438** | Redis Queue UI | External service |
+| **23442** | Backend API | External service |
+| **23448** | File Browser | External service |
+| **4173** | Vite preview (internal) | Container-internal only |
+| **8000** | FastAPI backend (internal) | Backend container port |
+| **5173** | Vite dev server (local) | Only for npm run dev |
 
 ---
 
-## 🎯 Future Roadmap
+## Future Roadmap
 
 ### Planned Enhancements
 
-- **Real-time Collaboration**: Multi-user dashboard sharing
-- **Advanced Analytics**: ML-powered insights and recommendations
-- **Cloud Provider Integration**: AWS, GCP, Azure native deployments
-- **Mobile Application**: Native iOS/Android apps
+- **Real-time Collaboration**: Multi-user dashboard sharing with presence indicators
+- **Advanced Analytics**: ML-powered insights and anomaly detection
+- **Cloud Provider Integration**: Native AWS, GCP, Azure deployment templates
+- **Mobile Application**: Responsive mobile-first interface
 - **Plugin System**: Extensible architecture for custom integrations
-- **Advanced Security**: SSO, OAuth 2.0, and audit logging
+- **Advanced Security**: SSO, OAuth 2.0, audit logging
 
-### Technology Stack Evolution
+---
 
-- **Backend Services**: Microservices with gRPC
-- **Database**: PostgreSQL for metadata, TimescaleDB for metrics
-- **Message Queue**: Apache Kafka for event streaming
-- **Monitoring**: Prometheus + Grafana for observability
-- **CI/CD**: GitHub Actions with automated testing and deployment
+## License
+
+This project is licensed under the MIT License.
+
+---
+
+## Author
+
+<div align="center">
+  <img src="https://avatars.githubusercontent.com/u/29950157?s=400&u=d528df9d6e8ac9a9041c8ca67cf75dae0666c6b6&v=4" alt="Wisrovi Rodriguez" width="120" height="120" style="border-radius: 50%;">
+  
+  ### William Rodriguez - wisrovi
+  
+  **Software Engineer & System Architect** | **Technology Evangelist**
+  
+  Specialized in AI Infrastructure and Orchestration. Creator of W-Darwin Ops, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.
+  
+  [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/wisrovi-rodriguez/)
+  
+  Location: Spain | Email: wisrovi at neuroforge.ai
+</div>
 
 ---
 
 <div align="center">
-  <strong>🚀 Built with passion for AI infrastructure and distributed computing 🚀</strong>
+  <strong>Built with passion for AI infrastructure and distributed computing</strong>
+  
+  **W-Darwin Ops** - Where models are not just trained, but evolved.
 </div>

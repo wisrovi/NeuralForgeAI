@@ -25,12 +25,12 @@ export const USER_AVATAR_URL = "https://avatars.githubusercontent.com/u/29950157
 // === API CONFIGURATION ===
 
 export const UPLOAD_API_CONFIG = {
-  url: `${import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442'}/train`,
+  url: `${import.meta.env.VITE_API_URL || 'http://192.168.3.89:23442'}/train`,
   method: 'POST'
 };
 
 // Dashboard API Configuration
-const API_BASE = import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://192.168.3.89:23442';
 
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
@@ -83,9 +83,9 @@ export const DEFAULT_PROJECTS: ProjectDefinition[] = [
 ];
 
 
-const MLFLOW_TRACKING_URI = import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://192.168.1.137:23435/';
-const REDIS_TRACKING_URL = import.meta.env.VITE_REDIS_TRACKING_URL || 'http://192.168.1.137:23438/';
-const FILEBROWSER_URL = import.meta.env.VITE_FILEBROWSER_URL || 'http://192.168.1.137:23448/';
+const MLFLOW_TRACKING_URI = import.meta.env.VITE_MLFLOW_TRACKING_URI || 'http://192.168.3.89:23435/';
+const REDIS_TRACKING_URL = import.meta.env.VITE_REDIS_TRACKING_URL || 'http://192.168.3.89:23438/';
+const FILEBROWSER_URL = import.meta.env.VITE_FILEBROWSER_URL || 'http://192.168.3.89:23448/';
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {

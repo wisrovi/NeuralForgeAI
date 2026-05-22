@@ -54,7 +54,7 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(true);
 
   // API base for config
-  const API_CONFIG_URL = `${import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442'}/config`;
+  const API_CONFIG_URL = `${import.meta.env.VITE_API_URL || 'http://192.168.3.89:23442'}/config`;
 
   // Fetch from API on mount
   useEffect(() => {
