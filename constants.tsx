@@ -20,6 +20,7 @@ import {
 import { Microservice, UserProfile, ProjectDefinition } from './types';
 
 export const APP_NAME = "WDarwin Ops";
+export const USER_AVATAR_URL = "https://avatars.githubusercontent.com/u/29950157?s=400&u=d528df9d6e8ac9a9041c8ca67cf75dae0666c6b6&v=4";
 
 // === API CONFIGURATION ===
 
@@ -191,10 +192,10 @@ export const DEVELOPER_PROFILE = {
   name: "Wisrovi Rodríguez",
   title: "Software Engineer & System Architect",
   bio: "Specialized in AI Infrastructure and Orchestration. Creator of WDarwin Ops, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
-  location: "Bogotá, Colombia",
+  location: "Spain",
   linkedin: "https://www.linkedin.com/in/wisrovi-rodriguez/",
   linkedinSearch: "https://www.linkedin.com/in/wisrovi-rodriguez/",
-  avatarUrl: "https://media.licdn.com/dms/image/v2/D4E03AQFvEdF-sFaNAg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713247892716?e=1766016000&v=beta&t=t1VItss12ESC48cGJxrfp183GXvka8FbZ9oStnbfM28" 
+  avatarUrl: USER_AVATAR_URL 
 };
 
 export const PRESENTATION_SLIDES = [
