@@ -53,6 +53,16 @@ const AboutView: React.FC = () => {
                       <Linkedin size={18} />
                       <span>Connect on LinkedIn</span>
                     </a>
+
+                    <a 
+                      href="https://wisrovi.dev"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg transition-all shadow-md hover:shadow-lg font-medium"
+                    >
+                      <Globe size={18} />
+                      <span>Visit Creator Website</span>
+                    </a>
                     
                     <div className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700">
                       <Globe size={18} />
