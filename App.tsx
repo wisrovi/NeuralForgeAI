@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import ServiceViewer from './components/ServiceViewer';
 import SettingsView from './components/SettingsView';
 import DashboardHome from './components/DashboardHome';
@@ -47,34 +48,71 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // === DATA REGISTRIES (Users & Projects) ===
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem('omni_users');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS;
-  });
+  // === SHARED DATA REGISTRIES (Users & Projects) ===
+  const [users, setUsers] = useState<UserProfile[]>(DEFAULT_USERS);
+  const [projects, setProjects] = useState<ProjectDefinition[]>(DEFAULT_PROJECTS);
+  const [isSyncing, setIsSyncing] = useState(true);
 
-  const [projects, setProjects] = useState<ProjectDefinition[]>(() => {
-    const saved = localStorage.getItem('omni_projects');
-    return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
-  });
+  // API base for config
+  const API_CONFIG_URL = `${import.meta.env.VITE_API_URL || 'http://192.168.1.137:23442'}/config`;
 
-  // Persist Users/Projects on change
+  // Fetch from API on mount
   useEffect(() => {
-    localStorage.setItem('omni_users', JSON.stringify(users));
-  }, [users]);
+    const syncData = async () => {
+      try {
+        const [usersRes, projectsRes] = await Promise.all([
+          fetch(`${API_CONFIG_URL}/users`),
+          fetch(`${API_CONFIG_URL}/projects`)
+        ]);
+        
+        if (usersRes.ok) {
+          const remoteUsers = await usersRes.json();
+          if (remoteUsers && remoteUsers.length > 0) setUsers(remoteUsers);
+        }
+        
+        if (projectsRes.ok) {
+          const remoteProjects = await projectsRes.json();
+          if (remoteProjects && remoteProjects.length > 0) setProjects(remoteProjects);
+        }
+      } catch (e) {
+        console.error("Sync with Redis failed, using defaults", e);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+    syncData();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('omni_projects', JSON.stringify(projects));
-  }, [projects]);
+  // Handlers for Data Mutation (with API push)
+  const saveUsersToRemote = async (updatedUsers: UserProfile[]) => {
+    setUsers(updatedUsers);
+    try {
+      await fetch(`${API_CONFIG_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedUsers)
+      });
+    } catch (e) { console.error("Failed to persist users", e); }
+  };
 
-  // Handlers for Data Mutation
-  const handleAddUser = (user: UserProfile) => setUsers(prev => [...prev, user]);
-  const handleUpdateUser = (updated: UserProfile) => setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-  const handleDeleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
+  const saveProjectsToRemote = async (updatedProjects: ProjectDefinition[]) => {
+    setProjects(updatedProjects);
+    try {
+      await fetch(`${API_CONFIG_URL}/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProjects)
+      });
+    } catch (e) { console.error("Failed to persist projects", e); }
+  };
 
-  const handleAddProject = (project: ProjectDefinition) => setProjects(prev => [...prev, project]);
-  const handleUpdateProject = (updated: ProjectDefinition) => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-  const handleDeleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
+  const handleAddUser = (user: UserProfile) => saveUsersToRemote([...users, user]);
+  const handleUpdateUser = (updated: UserProfile) => saveUsersToRemote(users.map(u => u.id === updated.id ? updated : u));
+  const handleDeleteUser = (id: string) => saveUsersToRemote(users.filter(u => u.id !== id));
+
+  const handleAddProject = (project: ProjectDefinition) => saveProjectsToRemote([...projects, project]);
+  const handleUpdateProject = (updated: ProjectDefinition) => saveProjectsToRemote(projects.map(p => p.id === updated.id ? updated : p));
+  const handleDeleteProject = (id: string) => saveProjectsToRemote(projects.filter(p => p.id !== id));
 
   // Dynamic Services Configuration State (Persisted)
   const [services, setServices] = useState<Microservice[]>(() => {
@@ -262,6 +300,9 @@ const App: React.FC = () => {
             ) : (
               <ServiceViewer service={activeService} />
             )}
+            
+            {/* Global Footer */}
+            <Footer />
           </main>
         </div>
       </div>
