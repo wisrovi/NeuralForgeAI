@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Monitor, Cpu, Database, Activity, Server, Brain, Layers, Eye, GitBranch, Zap, User, Linkedin } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Monitor, Cpu, Database, Activity, Server, Brain, Layers, Eye, GitBranch, Zap, User, Linkedin, Globe } from 'lucide-react';
 import { PRESENTATION_SLIDES, DEVELOPER_PROFILE } from '../constants';
 
 interface PresentationModeProps {
@@ -112,7 +112,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({ onClose }) => {
             </p>
 
             {slide.isProfile && (
-              <div className="mt-8 flex justify-center md:justify-start">
+              <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-4">
                  <a 
                    href={DEVELOPER_PROFILE.linkedin}
                    target="_blank"
@@ -121,6 +121,16 @@ const PresentationMode: React.FC<PresentationModeProps> = ({ onClose }) => {
                  >
                    <Linkedin size={20} />
                    Connect on LinkedIn
+                 </a>
+
+                 <a 
+                   href="https://wisrovi.dev"
+                   target="_blank"
+                   rel="noreferrer" 
+                   className="flex items-center gap-2 px-6 py-3 bg-white hover:bg-gray-100 rounded-full text-black font-medium transition-all transform hover:scale-105"
+                 >
+                   <Globe size={20} />
+                   Visit Creator Website
                  </a>
               </div>
             )}
