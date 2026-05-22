@@ -50,23 +50,28 @@ const DashboardHome: React.FC = () => {
   const fetchData = async (configKey: keyof typeof DASHBOARD_API_CONFIG) => {
     const config = DASHBOARD_API_CONFIG[configKey];
     try {
-      const res = await fetch(config.url, {
+      const fetchOptions: RequestInit = {
         method: config.method,
-        body: JSON.stringify(config.payload),
         headers: { 'Content-Type': 'application/json' },
-      });
+      };
+      
+      if (config.method !== 'GET' && (config as any).payload) {
+        fetchOptions.body = JSON.stringify((config as any).payload);
+      }
+
+      const res = await fetch(config.url, fetchOptions);
       if (!res.ok) throw new Error(`Error fetching ${configKey}`);
       return await res.json();
     } catch (e) {
       console.warn(`Failed to fetch ${configKey}`, e);
-      return { id: Math.floor(Math.random() * 100) }; // Fallback for demo
+      return null;
     }
   };
 
   const fetchAllGranularData = async () => {
     setLoading(true);
     try {
-      // Trigger all 8 requests in parallel
+      // Trigger all requests in parallel
       const [
         workersData,
         gpuData,
@@ -74,55 +79,39 @@ const DashboardHome: React.FC = () => {
         storageData,
         jobsData,
         redisData,
-        minioData,
-        completionData
       ] = await Promise.all([
         fetchData('activeWorkers'),
         fetchData('gpuUtil'),
         fetchData('queueDepth'),
         fetchData('storageUsed'),
         fetchData('activeJobs'),
-        fetchData('redisMemory'),
-        fetchData('minioBandwidth'),
-        fetchData('estCompletion')
+        fetchData('redisMemory')
       ]);
 
-      // MAPPING LOGIC: Map the 8 separate responses to our Dashboard State
-      // Use real API data instead of mock generation
-      const wSeed = workersData.id || 1;
-      const gSeed = gpuData.id || 2;
-      const qSeed = queueData.id || 3;
-      const sSeed = storageData.id || 4;
-      const rSeed = redisData.id || 5;
-      const mSeed = minioData.id || 6;
-      const eSeed = completionData.id || 7;
-
       // Use real jobs data from API
-      console.log('Jobs API Response:', jobsData);
-      const apiJobs = jobsData.jobs || jobsData || [];
-      const newJobs = (Array.isArray(apiJobs) ? apiJobs : []).map((job, index) => {
-        const jobId = typeof job.id === 'string' ? job.id.replace('job_', '') : job.id;
+      const apiJobs = jobsData?.jobs || [];
+      const newJobs = (Array.isArray(apiJobs) ? apiJobs : []).map((job: any, index: number) => {
         return {
-          id: parseInt(jobId) || (jobsData.id || 200) + index,
-          name: job.name || `Training-Job-${index + 1}`,
-          worker: job.worker || `Worker-0${index + 1}`,
-          epoch: job.epoch || `${Math.floor(Math.random() * 50) + 1}/100`,
-          progress: job.progress || Math.floor(Math.random() * 100),
-          map: job.map || (0.3 + Math.random() * 0.4).toFixed(3)
+          id: job.id || index,
+          name: job.name || `Task-${index + 1}`,
+          worker: job.worker || 'Unknown',
+          epoch: job.epoch || '--/--',
+          progress: job.progress || 0,
+          map: job.map || '0.000'
         };
       });
 
       setData({
-        activeWorkers: workersData.value ? `${workersData.value}/16` : `${(wSeed % 16) + 1}/16`,
-        workerTrend: workersData.active_nodes ? `+${workersData.active_nodes} provisioning` : "+2 provisioning",
-        gpuUtilization: gpuData.value ? `${gpuData.value}%` : `${Math.min(99, 40 + (gSeed % 50))}%`,
-        queueDepth: queueData.value ? `${queueData.value}` : `${(qSeed * 2) % 100}`,
-        storageUsed: storageData.value ? `${storageData.value} TB` : `${10 + (sSeed % 10)}.${sSeed % 9} TB`,
-        redisMemory: redisData.value ? `${redisData.value} GB` : `${(rSeed % 5) + 1}.${rSeed % 9} GB`,
-        redisLoad: redisData.used_gb ? Math.round((redisData.used_gb / (redisData.value || 1)) * 100) : 40 + (rSeed % 40),
-        minioBandwidth: minioData.value ? `${minioData.value} MB/s` : `${300 + (mSeed % 500)} MB/s`,
-        minioLoad: minioData.connections ? Math.min(100, minioData.connections * 2) : 20 + (mSeed % 50),
-        estCompletion: completionData.value ? completionData.value : `${(eSeed % 12) + 1}h ${(eSeed * 3) % 60}m`,
+        activeWorkers: workersData ? `${workersData.value}/16` : '0/16',
+        workerTrend: workersData?.active_nodes ? `+${workersData.active_nodes} provisioning` : "stable",
+        gpuUtilization: gpuData ? `${gpuData.value}%` : '0%',
+        queueDepth: queueData ? `${queueData.value}` : '0',
+        storageUsed: storageData ? `${storageData.value} TB` : '0 TB',
+        redisMemory: redisData ? redisData.used_memory : '0 GB',
+        redisLoad: redisData?.used_gb ? Math.round((redisData.used_gb / (redisData.value || 8)) * 100) : 0,
+        minioBandwidth: '0 MB/s', 
+        minioLoad: 0,
+        estCompletion: '--:--',
         activeJobs: newJobs
       });
 
