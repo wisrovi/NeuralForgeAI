@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Presentation, Dna, Star, ChevronDown } from 'lucide-react';
 import { Microservice, UserRole } from '../types';
-import { APP_NAME } from '../constants';
+import { APP_NAME, USER_AVATAR_URL } from '../constants';
 
 interface SidebarProps {
   items: Microservice[];
@@ -195,9 +195,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <div className={`flex items-center gap-3 ${!isOpen ? 'justify-center' : ''} pt-2 border-t border-gray-200 dark:border-gray-700/50`}>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 shrink-0 border-2 border-white dark:border-gray-700 flex items-center justify-center text-white font-bold text-xs">
-            WR
-          </div>
+          <img 
+            src={USER_AVATAR_URL} 
+            alt="User Avatar" 
+            className="w-10 h-10 rounded-full shrink-0 border-2 border-white dark:border-gray-700 object-cover"
+          />
           <div className={`overflow-hidden transition-all duration-300 ${isOpen ? 'w-auto opacity-100' : 'w-0 opacity-0'}`}>
             <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                {userRole === 'admin' ? 'System Admin' : 'Guest User'}
