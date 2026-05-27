@@ -14,6 +14,7 @@ import LaunchTrainingView from './components/LaunchTrainingView'; // Renamed imp
 import UserManagementView from './components/UserManagementView'; // New import
 import ProjectManagementView from './components/ProjectManagementView'; // New import
 import AboutView from './components/AboutView';
+import AiAssistantModal from './components/AiAssistantModal';
 import { DEFAULT_MICROSERVICES, DEFAULT_USERS, DEFAULT_PROJECTS } from './constants';
 import { Microservice, UserRole, UserProfile, ProjectDefinition } from './types';
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
   const [showPresentation, setShowPresentation] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
 
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
@@ -54,7 +56,7 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(true);
 
   // API base for config
-  const API_CONFIG_URL = `${import.meta.env.VITE_API_URL || 'http://192.168.3.89:23442'}/config`;
+  const API_CONFIG_URL = `${'PLACEHOLDER_VITE_API_URL' || 'http://192.168.1.137:23442'}/config`;
 
   // Fetch from API on mount
   useEffect(() => {
@@ -242,6 +244,11 @@ const App: React.FC = () => {
         onClose={() => setShowTerminal(false)} 
       />
 
+      <AiAssistantModal 
+        isOpen={showAiAssistant}
+        onClose={() => setShowAiAssistant(false)}
+      />
+
       <div className={`flex h-screen w-full bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100 transition-colors duration-300 ${showSplash ? 'opacity-0' : 'opacity-100'}`}>
         
         <Sidebar 
@@ -262,6 +269,7 @@ const App: React.FC = () => {
             toggleTheme={toggleTheme}
             activeService={activeService}
             toggleSidebar={toggleSidebar}
+            onOpenAiAssistant={() => setShowAiAssistant(true)}
           />
 
           <main className="flex-1 p-4 md:p-6 overflow-hidden relative overflow-y-auto custom-scrollbar">

@@ -12,22 +12,23 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Pass build args to environment
-ARG VITE_MLFLOW_TRACKING_URI
-ARG VITE_REDIS_TRACKING_URL
-ARG VITE_FILEBROWSER_URL
-ARG VITE_API_URL
-
-ENV VITE_MLFLOW_TRACKING_URI=$VITE_MLFLOW_TRACKING_URI
-ENV VITE_REDIS_TRACKING_URL=$VITE_REDIS_TRACKING_URL
-ENV VITE_FILEBROWSER_URL=$VITE_FILEBROWSER_URL
-ENV VITE_API_URL=$VITE_API_URL
-
 # Build the application
 RUN npm run build
 
+# Runtime stage
+FROM node:18-alpine
+
 WORKDIR /app
+
+# Copy the built assets from the builder stage
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/package*.json /app/
+COPY --from=builder /app/node_modules /app/node_modules
+COPY entrypoint.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 4173
 
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0"]

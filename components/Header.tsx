@@ -7,9 +7,10 @@ interface HeaderProps {
   toggleTheme: () => void;
   activeService: Microservice;
   toggleSidebar: () => void;
+  onOpenAiAssistant: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, activeService, toggleSidebar }) => {
+const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, activeService, toggleSidebar, onOpenAiAssistant }) => {
   const isGeminiActive = localStorage.getItem('omni_gemini_enabled') === 'true';
 
   return (
@@ -54,7 +55,11 @@ const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, activeService,
         </div>
 
         {isGeminiActive && (
-           <button className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors" title="Ask Gemini">
+           <button 
+             onClick={onOpenAiAssistant}
+             className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors" 
+             title="Ask Gemini"
+           >
              <Sparkles size={20} />
            </button>
         )}
