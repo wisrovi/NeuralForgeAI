@@ -1,59 +1,167 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>W-Darwin Ops | Wisrovi Evolutionary AI</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              gray: {
-                750: '#2d3748',
-                850: '#1a202c',
-                950: '#0d1117',
-              },
-              brand: {
-                50: '#f0f9ff',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                900: '#0c4a6e',
-              }
-            },
-            animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'float': 'float 6s ease-in-out infinite',
-            },
-            keyframes: {
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-20px)' },
-              }
-            }
-          }
-        }
-      }
-    </script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroForge UI | WDarwin Ops Interface</title>
+    
+    <meta name="description" content="NeuroForge UI: The command center for WDarwin Ops. A high-performance React dashboard with Gemini AI integration for distributed YOLO orchestration.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' style='stop-color:%23a855f7'/><stop offset='100%25' style='stop-color:%233b82f6'/></linearGradient></defs><rect width='100' height='100' rx='20' fill='url(%23g)'/><path d='M30 50 L45 65 L70 35' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-      body {
-        transition: background-color 0.3s ease, color 0.3s ease;
-      }
-      .hide-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .hide-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-    </style>
+        :root {
+            --primary: #a855f7;
+            --primary-glow: rgba(168, 85, 247, 0.4);
+            --secondary: #3b82f6;
+            --secondary-glow: rgba(59, 130, 246, 0.4);
+            --bg-deep: #030712;
+            --bg-card: rgba(17, 24, 39, 0.6);
+            --bg-card-hover: rgba(31, 41, 55, 0.8);
+            --text-main: #f9fafb;
+            --text-dim: #9ca3af;
+            --border: rgba(255, 255, 255, 0.08);
+            --gradient-linear: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-  </head>
-  <body class="bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100 overflow-hidden">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: radial-gradient(at 0% 0%, hsla(270, 100%, 50%, 0.1) 0, transparent 50%);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        section { padding: 100px 0; }
+
+        .gradient-text {
+            background: var(--gradient-linear);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav {
+            position: fixed;
+            top: 0; width: 100%; z-index: 1000; padding: 1.5rem 0;
+            transition: var(--transition);
+        }
+        nav.scrolled {
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(15px);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .hero h1 { font-size: clamp(3rem, 8vw, 6rem); font-weight: 800; margin-bottom: 1.5rem; }
+        .hero p { font-size: 1.25rem; color: var(--text-dim); max-width: 700px; margin: 0 auto 3rem; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        .btn-main { background: var(--gradient-linear); color: white; box-shadow: 0 0 30px var(--primary-glow); }
+        .btn-main:hover { transform: translateY(-5px); }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            border-radius: 24px;
+            transition: var(--transition);
+        }
+        .feature-card:hover { transform: translateY(-10px); border-color: var(--primary); }
+        .feature-icon { font-size: 2rem; color: var(--primary); margin-bottom: 1.5rem; }
+
+        footer { padding: 40px 0; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+    </style>
+</head>
+<body>
+
+    <nav id="navbar">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="#" style="text-decoration: none; color: white; font-weight: 800; font-size: 1.5rem;">
+                <i class="fas fa-desktop"></i> NeuroForge
+            </a>
+            <a href="https://github.com/wisrovi/NeuralForgeAI" class="btn btn-main" style="padding: 0.5rem 1.5rem;">GitHub</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid var(--primary); padding: 0.5rem 1rem; border-radius: 100px; display: inline-block; color: var(--primary); font-size: 0.8rem; font-weight: 700; margin-bottom: 2rem;">
+                THE COMMAND CENTER
+            </div>
+            <h1>Visualize <span class="gradient-text">Neural Intelligence</span></h1>
+            <p>
+                A high-performance React dashboard for WDarwin Ops. 
+                Monitor clusters, launch training jobs, and interact with Gemini AI 
+                in a unified, sleek interface.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <a href="#features" class="btn btn-main">Explore Interface</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="features">
+        <div class="container">
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Launchpad</h3>
+                    <p>Intuitive YAML-based experiment submission system with real-time validation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-sparkles"></i></div>
+                    <h3>Gemini AI</h3>
+                    <p>Integrated AI Assistant for GPU optimization tips and training status analysis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-terminal"></i></div>
+                    <h3>Live Telemetry</h3>
+                    <p>Embedded terminal widgets and real-time metric visualization for every worker.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 WDarwin Ops | NeuroForge UI Component</p>
+    </footer>
+
+    <script>
+        window.addEventListener('scroll', function() {
+            const nav = document.getElementById('navbar');
+            window.scrollY > 50 ? nav.classList.add('scrolled') : nav.classList.remove('scrolled');
+        });
+    </script>
+</body>
 </html>
