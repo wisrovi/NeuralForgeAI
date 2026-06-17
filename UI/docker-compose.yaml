@@ -1,25 +1,25 @@
 version: '3.8'
 
 services:    
-  neuroforge-frontend:
+  ui:
     build: 
       context: .
       args:
         - VITE_API_HOST=${API_HOST}
         - VITE_CONTROL_HOST=${CONTROL_HOST}
-    image: wisrovi/w_darwin_ops-frontend:latest
+    image: wisrovi/train_service:w_darwin_ops_frontend_v1.0.0
     ports:
-      - "5810:4173"
+      - "23432:4173"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - VITE_API_HOST=${API_HOST}
-      - VITE_CONTROL_HOST=${CONTROL_HOST}
-    env_file:
-      - control_host.env
-    networks:
-      - train_service
+      - VITE_API_URL=http://192.168.10.252:23442
+      - VITE_MLFLOW_TRACKING_URI=http://192.168.10.252:23435
+      - VITE_REDIS_TRACKING_URL=http://192.168.10.252:23438
+      - VITE_FILEBROWSER_URL=http://192.168.10.252:23448/VITE_FILEBROWSER_URL
+      # CONTROL_HOST
+      - CONTROL_HOST=192.168.10.252
+      - CIFS_USER=wisrovi
+      - CIFS_PASS=wyoloservice
+      # gemini api key
+      - GEMINI_API_KEY=AIzaSyB2Ny-uqnwANVOXAXS3cT-U1AZ3bvldKAU
 
-networks:
-  train_service:
-    name: train_service
-    external: true
