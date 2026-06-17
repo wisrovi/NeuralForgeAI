@@ -179,6 +179,54 @@ async def delete_task(task_id: str) -> dict[str, Any]:
     return {"status": "revoked", "task_id": task_id}
 
 
+@app.get("/users")
+async def get_users() -> list[dict[str, Any]]:
+    """Retrieves the list of users from Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        data = r.get("omni_users")
+        if data:
+            return json.loads(data)
+        return []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/users")
+async def save_users(users: list[dict[str, Any]]):
+    """Saves the entire list of users to Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        r.set("omni_users", json.dumps(users))
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/projects")
+async def get_projects() -> list[dict[str, Any]]:
+    """Retrieves the list of projects from Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        data = r.get("omni_projects")
+        if data:
+            return json.loads(data)
+        return []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/projects")
+async def save_projects(projects: list[dict[str, Any]]):
+    """Saves the entire list of projects to Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        r.set("omni_projects", json.dumps(projects))
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/health")
 async def health_check():
     """Checks connection to Redis."""
