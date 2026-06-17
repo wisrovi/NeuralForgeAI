@@ -50,6 +50,26 @@ export const UPLOAD_API_CONFIG = {
   method: 'POST'
 };
 
+// Persistence API Configuration
+export const PERSISTENCE_API_CONFIG = {
+  users: {
+    url: `${API_BASE}/users`,
+    method: 'GET'
+  },
+  projects: {
+    url: `${API_BASE}/projects`,
+    method: 'GET'
+  },
+  saveUsers: {
+    url: `${API_BASE}/users`,
+    method: 'POST'
+  },
+  saveProjects: {
+    url: `${API_BASE}/projects`,
+    method: 'POST'
+  }
+};
+
 // Dashboard API Configuration
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
