@@ -43,19 +43,32 @@ const App: React.FC = () => {
 
   // Favorites State
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('omni_favorites');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('omni_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to parse favorites", e);
+      return [];
+    }
   });
 
   // === DATA REGISTRIES (Users & Projects) ===
   const [users, setUsers] = useState<UserProfile[]>(() => {
-    const saved = localStorage.getItem('omni_users');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS;
+    try {
+      const saved = localStorage.getItem('omni_users');
+      return saved ? JSON.parse(saved) : DEFAULT_USERS;
+    } catch (e) {
+      return DEFAULT_USERS;
+    }
   });
 
   const [projects, setProjects] = useState<ProjectDefinition[]>(() => {
-    const saved = localStorage.getItem('omni_projects');
-    return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
+    try {
+      const saved = localStorage.getItem('omni_projects');
+      return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
+    } catch (e) {
+      return DEFAULT_PROJECTS;
+    }
   });
 
   // Persist Users/Projects on change

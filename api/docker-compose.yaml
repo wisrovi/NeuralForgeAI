@@ -1,0 +1,17 @@
+services:
+  neuroforge-api:
+    build: .
+    image: wisrovi/train_service:api_server_v1.0.0
+    ports:
+      - "23442:8000"
+    env_file:
+      - control_host.env
+    volumes:
+      - .:/app
+    networks:
+      - train_service
+
+networks:
+  train_service:
+    name: train_service
+    external: true
