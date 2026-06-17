@@ -13,7 +13,7 @@ import LaunchTrainingView from './components/LaunchTrainingView'; // Renamed imp
 import UserManagementView from './components/UserManagementView'; // New import
 import ProjectManagementView from './components/ProjectManagementView'; // New import
 import AboutView from './components/AboutView';
-import { DEFAULT_MICROSERVICES, DEFAULT_USERS, DEFAULT_PROJECTS } from './constants';
+import { DEFAULT_MICROSERVICES, DEFAULT_USERS, DEFAULT_PROJECTS, PERSISTENCE_API_CONFIG } from './constants';
 import { Microservice, UserRole, UserProfile, ProjectDefinition } from './types';
 
 const App: React.FC = () => {
@@ -71,14 +71,58 @@ const App: React.FC = () => {
     }
   });
 
-  // Persist Users/Projects on change
+  const [hasLoadedPersistence, setHasLoadedPersistence] = useState(false);
+
+  // Initial Load from API (Redis Persistence)
+  useEffect(() => {
+    const syncWithAPI = async () => {
+      try {
+        const [uRes, pRes] = await Promise.all([
+          fetch(PERSISTENCE_API_CONFIG.users.url),
+          fetch(PERSISTENCE_API_CONFIG.projects.url)
+        ]);
+        
+        if (uRes.ok) {
+          const uData = await uRes.json();
+          if (Array.isArray(uData) && uData.length > 0) setUsers(uData);
+        }
+        
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          if (Array.isArray(pData) && pData.length > 0) setProjects(pData);
+        }
+      } catch (e) {
+        console.warn("Could not sync with Redis API, using local data.", e);
+      } finally {
+        setHasLoadedPersistence(true);
+      }
+    };
+    syncWithAPI();
+  }, []);
+
+  // Persist Users on change
   useEffect(() => {
     localStorage.setItem('omni_users', JSON.stringify(users));
-  }, [users]);
+    if (hasLoadedPersistence) {
+      fetch(PERSISTENCE_API_CONFIG.saveUsers.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(users)
+      }).catch(e => console.error("Redis User Sync Error", e));
+    }
+  }, [users, hasLoadedPersistence]);
 
+  // Persist Projects on change
   useEffect(() => {
     localStorage.setItem('omni_projects', JSON.stringify(projects));
-  }, [projects]);
+    if (hasLoadedPersistence) {
+      fetch(PERSISTENCE_API_CONFIG.saveProjects.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projects)
+      }).catch(e => console.error("Redis Project Sync Error", e));
+    }
+  }, [projects, hasLoadedPersistence]);
 
   // Handlers for Data Mutation
   const handleAddUser = (user: UserProfile) => setUsers(prev => [...prev, user]);
