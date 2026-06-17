@@ -2,16 +2,16 @@ services:
   neuroforge-api:
     build: .
     image: wisrovi/train_service:api_server_v1.0.0
+    container_name: control_server-fastapi-1
     ports:
       - "23442:8000"
-    env_file:
-      - control_host.env
+    environment:
+      - CONTROL_HOST=192.168.10.252
+      - CIFS_USER=wisrovi
+      - CIFS_PASS=wyoloservice
     volumes:
       - .:/app
-    networks:
-      - train_service
+    restart: always
 
-networks:
-  train_service:
-    name: train_service
-    external: true
+    
+
