@@ -12,6 +12,9 @@ interface LaunchTrainingViewProps {
 const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [mode, setMode] = useState<'public' | 'private'>('public');
+  const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [workerName, setWorkerName] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -183,30 +186,33 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     setResponseMsg('');
     setValidationErrors([]);
 
-    const user = users.find(u => u.id === selectedUserId);
     const project = projects.find(p => p.id === selectedProjectId);
 
     const formData = new FormData();
-    formData.append('username', user?.name || 'unknown');
-    formData.append('project_id', project?.id || 'unknown');
-    formData.append('project_name', project?.name || 'unknown');
-    formData.append('file', file);
+    // Fields expected by the API
+    formData.append('config_file', file);
+    formData.append('mode', mode);
+    formData.append('priority', priority);
+    if (mode === 'private' && workerName) {
+      formData.append('worker_name', workerName);
+    }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulating network
-
       const response = await fetch(UPLOAD_API_CONFIG.url, {
         method: UPLOAD_API_CONFIG.method,
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Upload failed');
-      
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Upload failed');
+      }
+      
       console.log('Submission success:', data);
       
       setUploadStatus('success');
-      setResponseMsg(`Training job for '${project?.name}' submitted successfully. Job ID: ${data.id || 'Job-X99'}`);
+      setResponseMsg(`Training job for '${project?.name}' submitted successfully. Study ID: ${data.study_id}`);
       
       setTimeout(() => {
         setFile(null);
@@ -214,10 +220,10 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         setResponseMsg('');
       }, 5000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setUploadStatus('error');
-      setResponseMsg('Failed to connect to orchestration server. Please check your network.');
+      setResponseMsg(error.message || 'Failed to connect to orchestration server. Please check your network.');
     }
   };
 
@@ -280,6 +286,57 @@ sweeper:
                   placeholder="Select Experiment..."
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Mode Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Dispatch Mode
+                </label>
+                <select 
+                  value={mode}
+                  onChange={(e) => setMode(e.target.value as any)}
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="public">Public (Shared Queue)</option>
+                  <option value="private">Private (Specific Worker)</option>
+                </select>
+              </div>
+
+              {/* Priority Selector (Visible in Public Mode) */}
+              {mode === 'public' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Priority
+                  </label>
+                  <select 
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as any)}
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Worker Name (Visible in Private Mode) */}
+              {mode === 'private' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Target Worker
+                  </label>
+                  <input 
+                    type="text"
+                    value={workerName}
+                    onChange={(e) => setWorkerName(e.target.value)}
+                    placeholder="e.g. gpu_node_01"
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Custom Drag & Drop Component */}

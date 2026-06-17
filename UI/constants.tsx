@@ -37,57 +37,52 @@ const getEnv = (key: string, fallback: string) => {
   }
 };
 
-const API_BASE = getEnv('VITE_API_URL', 'http://localhost:5809');
-const UPLOAD_API_BASE = getEnv('VITE_API_URL', 'http://neuroforge-api:8000');
+const API_HOST = getEnv('VITE_API_HOST', 'localhost');
+const CONTROL_HOST = getEnv('VITE_CONTROL_HOST', 'localhost');
+
+const API_BASE = getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
+const UPLOAD_API_BASE = getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
 
 // === API CONFIGURATION ===
 
 export const UPLOAD_API_CONFIG = {
-  url: `${UPLOAD_API_BASE}/posts`,
+  url: `${UPLOAD_API_BASE}/train`,
   method: 'POST'
 };
 
 // Dashboard API Configuration
 export const DASHBOARD_API_CONFIG = {
   activeWorkers: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "workers", query: "count_active_nodes" }
+    url: `${API_BASE}/workers`,
+    method: 'GET'
   },
   gpuUtil: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "gpu", query: "avg_gpu_utilization" }
+    url: `${API_BASE}/health`,
+    method: 'GET'
   },
   queueDepth: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "queue", query: "redis_queue_length" }
+    url: `${API_BASE}/tasks`,
+    method: 'GET'
   },
   storageUsed: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "storage", query: "minio_bucket_size" }
+    url: `${API_BASE}/health`,
+    method: 'GET'
   },
   activeJobs: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "jobs_list", status: "running", limit: 5 }
+    url: `${API_BASE}/tasks`,
+    method: 'GET'
   },
   redisMemory: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "redis_mem", instance: "primary_cache" }
+    url: `${API_BASE}/health`,
+    method: 'GET'
   },
   minioBandwidth: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "minio_bw", bucket: "training_data" }
+    url: `${API_BASE}/health`,
+    method: 'GET'
   },
   estCompletion: {
-    url: `${API_BASE}/posts`,
-    method: 'POST',
-    payload: { metric: "eta", job_ids: "active" }
+    url: `${API_BASE}/tasks`,
+    method: 'GET'
   }
 };
 
@@ -105,9 +100,9 @@ export const DEFAULT_PROJECTS: ProjectDefinition[] = [
   { id: 'p4', name: 'NexusFlow', description: 'Organizational Diagnostic System', createdAt: '2025-12-01' },
 ];
 
-const MLFLOW_TRACKING_URI = getEnv('MLFLOW_TRACKING_URI', 'http://localhost:23435');
-const REDIS_TRACKING_URL = getEnv('REDIS_TRACKING_URL', 'http://localhost:23439');
-const FILEBROWSER_URL = getEnv('FILEBROWSER_URL', 'http://localhost:23443');
+const MLFLOW_TRACKING_URI = getEnv('VITE_MLFLOW_TRACKING_URI', `http://${CONTROL_HOST}:23435`);
+const REDIS_TRACKING_URL = getEnv('VITE_REDIS_TRACKING_URL', `http://${CONTROL_HOST}:23439`);
+const FILEBROWSER_URL = getEnv('VITE_FILEBROWSER_URL', `http://${CONTROL_HOST}:23443`);
 
 export const DEFAULT_MICROSERVICES: Microservice[] = [
   {
@@ -163,11 +158,11 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     icon: <Layers size={20} />,
   },
   {
-    id: 'datasets',
-    name: 'Datasets',
-    description: 'File Browser for Training Data management',
+    id: 'optuna',
+    name: 'Optuna Dashboard',
+    description: 'Hyperparameter optimization and study insights',
     url: FILEBROWSER_URL,
-    icon: <FolderOpen size={20} />,
+    icon: <Database size={20} />,
   },  
   {
     id: 'users',
@@ -194,13 +189,13 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
 ];
 
 export const DEVELOPER_PROFILE = {
-  name: "Wisrovi Rodríguez",
-  title: "Software Engineer & System Architect",
-  bio: "Specialized in AI Infrastructure and Orchestration. Creator of NeuroForge, an advanced system for centralized YOLO training using Genetic Algorithms, Ray Tune, and distributed computing patterns.",
-  location: "Bogotá, Colombia",
+  name: "William Rodríguez",
+  title: "AI Leader & Solutions Architect",
+  bio: "As an AI Leader & Solutions Architect at eCaptureDtech, my mission is to bridge the gap between complex AI research and scalable industrial applications. Creator of NeuralForgeAI, an advanced system for distributed YOLO training and hyperparameter evolution.",
+  location: "Badajoz, Extremadura, Spain",
   linkedin: "https://www.linkedin.com/in/wisrovi-rodriguez/",
   linkedinSearch: "https://www.linkedin.com/in/wisrovi-rodriguez/",
-  avatarUrl: "https://media.licdn.com/dms/image/v2/D4E03AQFvEdF-sFaNAg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1713247892716?e=1766016000&v=beta&t=t1VItss12ESC48cGJxrfp183GXvka8FbZ9oStnbfM28" 
+  avatarUrl: "https://media.licdn.com/dms/image/v2/D4E03AQFvEdF-sFaNAg/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1713247892716?e=1783555200&v=beta&t=eK6Uy-wvnIXeWKyBiBtYzpGXjzrDvgB_cQ-dDTwgAsA" 
 };
 
 export const PRESENTATION_SLIDES = [
