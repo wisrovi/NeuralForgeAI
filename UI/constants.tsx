@@ -60,12 +60,28 @@ export const PERSISTENCE_API_CONFIG = {
     url: `${API_BASE}/projects`,
     method: 'GET'
   },
+  services: {
+    url: `${API_BASE}/services`,
+    method: 'GET'
+  },
+  appConfig: {
+    url: `${API_BASE}/config`,
+    method: 'GET'
+  },
   saveUsers: {
     url: `${API_BASE}/users`,
     method: 'POST'
   },
   saveProjects: {
     url: `${API_BASE}/projects`,
+    method: 'POST'
+  },
+  saveServices: {
+    url: `${API_BASE}/services`,
+    method: 'POST'
+  },
+  saveAppConfig: {
+    url: `${API_BASE}/config`,
     method: 'POST'
   }
 };
