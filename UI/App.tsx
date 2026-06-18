@@ -180,6 +180,20 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const saveAppConfig = (newConfig: Partial<{gemini_enabled: boolean, favorites: string[], theme: string, user_role: string}>) => {
+      const config = {
+        gemini_enabled: newConfig.gemini_enabled !== undefined ? newConfig.gemini_enabled : geminiEnabled,
+        favorites: newConfig.favorites !== undefined ? newConfig.favorites : favoriteIds,
+        theme: newConfig.theme !== undefined ? newConfig.theme : (isDarkMode ? 'dark' : 'light'),
+        user_role: newConfig.user_role !== undefined ? newConfig.user_role : userRole
+      };
+      fetch(PERSISTENCE_API_CONFIG.saveAppConfig.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      }).catch(e => console.error("Redis Config Sync Error", e));
+  }
+
   // Handle Theme Effect
   useEffect(() => {
     const root = window.document.documentElement;
@@ -192,7 +206,6 @@ const App: React.FC = () => {
 
   const handleResetDefaults = () => {
     setServices(DEFAULT_MICROSERVICES);
-    // Optionally clear from Redis too
     fetch(PERSISTENCE_API_CONFIG.saveServices.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -202,6 +215,7 @@ const App: React.FC = () => {
 
   const handleToggleGemini = (enabled: boolean) => {
     setGeminiEnabled(enabled);
+    saveAppConfig({ gemini_enabled: enabled });
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -209,24 +223,21 @@ const App: React.FC = () => {
       const newFavorites = prev.includes(id) 
         ? prev.filter(favId => favId !== id)
         : [...prev, id];
+      saveAppConfig({ favorites: newFavorites });
       return newFavorites;
     });
   };
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
-      }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const handleUserRoleChange = (role: UserRole) => {
+      setUserRole(role);
+      saveAppConfig({ user_role: role });
+  }
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleTheme = () => {
+      const newTheme = !isDarkMode;
+      setIsDarkMode(newTheme);
+      saveAppConfig({ theme: newTheme ? 'dark' : 'light' });
+  };
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   const activeService = services.find(s => s.id === activeServiceId) || services[0];
@@ -282,7 +293,7 @@ const App: React.FC = () => {
                 onToggleGemini={handleToggleGemini}
                 onResetDefaults={handleResetDefaults}
                 userRole={userRole}
-                onChangeUserRole={setUserRole}
+                onChangeUserRole={handleUserRoleChange}
               />
             ) : activeService.id === 'dashboard' ? (
               <DashboardHome />
