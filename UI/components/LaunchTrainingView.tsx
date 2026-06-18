@@ -228,24 +228,41 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   };
 
   const yamlTemplate = `debug: wisrovi
-model: "yolov8n-cls.pt"
+model: "yolov8n.pt"
+type: "yolo"
 
 # Data Configuration
 train:
   data: /datasets/clasificacion/colorball.v8i.multiclass/
   epochs: 20
   imgsz: 640
+  device: 0
 
 # Hyperparameter Optimization
 sweeper:
+  # study
   version: 2
   study_name: "example_classification"
+
+  # optimization
   n_trials: 5
+  sampler: "TPESampler"
   search_space:
     model: ["choice", "yolov8n-cls.pt"]
     train:
       imgsz: ["choice", 416, 512, 640]
-      lr0: ["loguniform", 1e-5, 1e-2]`;
+      lr0: ["loguniform", 1e-5, 1e-2]
+
+  # evolutionary algorithm
+  algorithm: optuna
+  direction: maximize
+  fitness: "metrics/accuracy_top1"
+  tune: false
+
+metadata:
+  content: "Este es un experimento de xxx de imágenes."
+  author: "William Rodriguez"
+  documentation: "Este modelo fue entrenado con datos del 2026."`;
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up pb-10">
