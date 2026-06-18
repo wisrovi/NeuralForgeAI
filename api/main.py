@@ -227,6 +227,59 @@ async def save_projects(projects: list[dict[str, Any]]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/services")
+async def get_services() -> list[dict[str, Any]]:
+    """Retrieves the list of microservices from Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        data = r.get("omni_services_config")
+        if data:
+            return json.loads(data)
+        return []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/services")
+async def save_services(services: list[dict[str, Any]]):
+    """Saves the microservices configuration to Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        r.set("omni_services_config", json.dumps(services))
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/config")
+async def get_config() -> dict[str, Any]:
+    """Retrieves general app configuration (favorites, gemini, theme) from Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        data = r.get("omni_app_config")
+        if data:
+            return json.loads(data)
+        return {
+            "gemini_enabled": False,
+            "favorites": [],
+            "theme": "dark",
+            "user_role": "guest"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/config")
+async def save_config(config: dict[str, Any]):
+    """Saves general app configuration to Redis."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        r.set("omni_app_config", json.dumps(config))
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/health")
 async def health_check():
     """Checks connection to Redis."""
