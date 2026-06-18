@@ -7,11 +7,10 @@ interface HeaderProps {
   toggleTheme: () => void;
   activeService: Microservice;
   toggleSidebar: () => void;
+  isGeminiActive: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, activeService, toggleSidebar }) => {
-  const isGeminiActive = localStorage.getItem('omni_gemini_enabled') === 'true';
-
+const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, activeService, toggleSidebar, isGeminiActive }) => {
   return (
     <header className="h-16 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 sticky top-0 z-30">
       
