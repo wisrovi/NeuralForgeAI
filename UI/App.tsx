@@ -194,6 +194,19 @@ const App: React.FC = () => {
       }).catch(e => console.error("Redis Config Sync Error", e));
   }
 
+  // Persist Services on change
+  const handleUpdateServices = (updatedServices: Microservice[]) => {
+    setServices(updatedServices);
+    const simpleData = updatedServices.map(({ id, name, description, url }) => ({
+      id, name, description, url
+    }));
+    fetch(PERSISTENCE_API_CONFIG.saveServices.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(simpleData)
+    }).catch(e => console.error("Redis Services Sync Error", e));
+  };
+
   // Handle Theme Effect
   useEffect(() => {
     const root = window.document.documentElement;
