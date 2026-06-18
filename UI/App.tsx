@@ -36,40 +36,15 @@ const App: React.FC = () => {
   const [activeServiceId, setActiveServiceId] = useState<string>(DEFAULT_MICROSERVICES[0].id);
 
   // Gemini / AI Integration State
-  const [geminiEnabled, setGeminiEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('omni_gemini_enabled');
-    return saved === 'true';
-  });
+  const [geminiEnabled, setGeminiEnabled] = useState<boolean>(false);
 
   // Favorites State
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('omni_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Failed to parse favorites", e);
-      return [];
-    }
-  });
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
 
   // === DATA REGISTRIES (Users & Projects) ===
-  const [users, setUsers] = useState<UserProfile[]>(() => {
-    try {
-      const saved = localStorage.getItem('omni_users');
-      return saved ? JSON.parse(saved) : DEFAULT_USERS;
-    } catch (e) {
-      return DEFAULT_USERS;
-    }
-  });
-
-  const [projects, setProjects] = useState<ProjectDefinition[]>(() => {
-    try {
-      const saved = localStorage.getItem('omni_projects');
-      return saved ? JSON.parse(saved) : DEFAULT_PROJECTS;
-    } catch (e) {
-      return DEFAULT_PROJECTS;
-    }
-  });
+  const [users, setUsers] = useState<UserProfile[]>(DEFAULT_USERS);
+  const [projects, setProjects] = useState<ProjectDefinition[]>(DEFAULT_PROJECTS);
+  const [services, setServices] = useState<Microservice[]>(DEFAULT_MICROSERVICES);
 
   const [hasLoadedPersistence, setHasLoadedPersistence] = useState(false);
 
@@ -77,9 +52,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const syncWithAPI = async () => {
       try {
-        const [uRes, pRes] = await Promise.all([
+        const [uRes, pRes, sRes, cRes] = await Promise.all([
           fetch(PERSISTENCE_API_CONFIG.users.url),
-          fetch(PERSISTENCE_API_CONFIG.projects.url)
+          fetch(PERSISTENCE_API_CONFIG.projects.url),
+          fetch(PERSISTENCE_API_CONFIG.services.url),
+          fetch(PERSISTENCE_API_CONFIG.appConfig.url)
         ]);
         
         if (uRes.ok) {
@@ -91,8 +68,28 @@ const App: React.FC = () => {
           const pData = await pRes.json();
           if (Array.isArray(pData) && pData.length > 0) setProjects(pData);
         }
+
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (Array.isArray(sData) && sData.length > 0) {
+            setServices(DEFAULT_MICROSERVICES.map(def => {
+              const savedService = sData.find((p: any) => p.id === def.id);
+              return savedService ? { ...def, url: savedService.url } : def;
+            }));
+          }
+        }
+
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          if (cData) {
+            if (cData.gemini_enabled !== undefined) setGeminiEnabled(cData.gemini_enabled);
+            if (cData.favorites !== undefined) setFavoriteIds(cData.favorites);
+            if (cData.theme !== undefined) setIsDarkMode(cData.theme === 'dark');
+            if (cData.user_role !== undefined) setUserRole(cData.user_role);
+          }
+        }
       } catch (e) {
-        console.warn("Could not sync with Redis API, using local data.", e);
+        console.warn("Could not sync with Redis API.", e);
       } finally {
         setHasLoadedPersistence(true);
       }
@@ -102,7 +99,6 @@ const App: React.FC = () => {
 
   // Persist Users on change
   useEffect(() => {
-    localStorage.setItem('omni_users', JSON.stringify(users));
     if (hasLoadedPersistence) {
       fetch(PERSISTENCE_API_CONFIG.saveUsers.url, {
         method: 'POST',
@@ -114,7 +110,6 @@ const App: React.FC = () => {
 
   // Persist Projects on change
   useEffect(() => {
-    localStorage.setItem('omni_projects', JSON.stringify(projects));
     if (hasLoadedPersistence) {
       fetch(PERSISTENCE_API_CONFIG.saveProjects.url, {
         method: 'POST',
@@ -124,6 +119,38 @@ const App: React.FC = () => {
     }
   }, [projects, hasLoadedPersistence]);
 
+  // Persist Services on change
+  const handleUpdateServices = (updatedServices: Microservice[]) => {
+    setServices(updatedServices);
+    if (hasLoadedPersistence) {
+      const simpleData = updatedServices.map(({ id, name, description, url }) => ({
+        id, name, description, url
+      }));
+      fetch(PERSISTENCE_API_CONFIG.saveServices.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(simpleData)
+      }).catch(e => console.error("Redis Services Sync Error", e));
+    }
+  };
+
+  // Persist App Config (Gemini, Favorites, Theme, Role)
+  useEffect(() => {
+    if (hasLoadedPersistence) {
+      const config = {
+        gemini_enabled: geminiEnabled,
+        favorites: favoriteIds,
+        theme: isDarkMode ? 'dark' : 'light',
+        user_role: userRole
+      };
+      fetch(PERSISTENCE_API_CONFIG.saveAppConfig.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      }).catch(e => console.error("Redis Config Sync Error", e));
+    }
+  }, [geminiEnabled, favoriteIds, isDarkMode, userRole, hasLoadedPersistence]);
+
   // Handlers for Data Mutation
   const handleAddUser = (user: UserProfile) => setUsers(prev => [...prev, user]);
   const handleUpdateUser = (updated: UserProfile) => setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
@@ -132,24 +159,6 @@ const App: React.FC = () => {
   const handleAddProject = (project: ProjectDefinition) => setProjects(prev => [...prev, project]);
   const handleUpdateProject = (updated: ProjectDefinition) => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
   const handleDeleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
-
-  // Dynamic Services Configuration State (Persisted)
-  const [services, setServices] = useState<Microservice[]>(() => {
-    const saved = localStorage.getItem('omni_services_config');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return DEFAULT_MICROSERVICES.map(def => {
-          const savedService = parsed.find((p: any) => p.id === def.id);
-          return savedService ? { ...def, url: savedService.url } : def;
-        });
-      } catch (e) {
-        console.error("Failed to parse services settings", e);
-        return DEFAULT_MICROSERVICES;
-      }
-    }
-    return DEFAULT_MICROSERVICES;
-  });
 
   // Filter Services based on Role
   const visibleServices = services.filter(s => {
@@ -195,23 +204,18 @@ const App: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  // Persist Services when changed
-  const handleUpdateServices = (updatedServices: Microservice[]) => {
-    setServices(updatedServices);
-    const simpleData = updatedServices.map(({ id, name, description, url }) => ({
-      id, name, description, url
-    }));
-    localStorage.setItem('omni_services_config', JSON.stringify(simpleData));
-  };
-
   const handleResetDefaults = () => {
     setServices(DEFAULT_MICROSERVICES);
-    localStorage.removeItem('omni_services_config');
+    // Optionally clear from Redis too
+    fetch(PERSISTENCE_API_CONFIG.saveServices.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([])
+    });
   };
 
   const handleToggleGemini = (enabled: boolean) => {
     setGeminiEnabled(enabled);
-    localStorage.setItem('omni_gemini_enabled', String(enabled));
   };
 
   const handleToggleFavorite = (id: string) => {
@@ -219,7 +223,6 @@ const App: React.FC = () => {
       const newFavorites = prev.includes(id) 
         ? prev.filter(favId => favId !== id)
         : [...prev, id];
-      localStorage.setItem('omni_favorites', JSON.stringify(newFavorites));
       return newFavorites;
     });
   };
@@ -281,6 +284,7 @@ const App: React.FC = () => {
             toggleTheme={toggleTheme}
             activeService={activeService}
             toggleSidebar={toggleSidebar}
+            isGeminiActive={geminiEnabled}
           />
 
           <main className="flex-1 p-4 md:p-6 overflow-hidden relative overflow-y-auto custom-scrollbar">
