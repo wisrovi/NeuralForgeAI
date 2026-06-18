@@ -61,12 +61,16 @@ const App: React.FC = () => {
         
         if (uRes.ok) {
           const uData = await uRes.json();
-          if (Array.isArray(uData) && uData.length > 0) setUsers(uData);
+          if (Array.isArray(uData) && uData.length > 0) {
+            setUsers(uData);
+          }
         }
         
         if (pRes.ok) {
           const pData = await pRes.json();
-          if (Array.isArray(pData) && pData.length > 0) setProjects(pData);
+          if (Array.isArray(pData) && pData.length > 0) {
+            setProjects(pData);
+          }
         }
 
         if (sRes.ok) {
@@ -97,68 +101,50 @@ const App: React.FC = () => {
     syncWithAPI();
   }, []);
 
-  // Persist Users on change
-  useEffect(() => {
-    if (hasLoadedPersistence) {
-      fetch(PERSISTENCE_API_CONFIG.saveUsers.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(users)
-      }).catch(e => console.error("Redis User Sync Error", e));
-    }
-  }, [users, hasLoadedPersistence]);
-
-  // Persist Projects on change
-  useEffect(() => {
-    if (hasLoadedPersistence) {
-      fetch(PERSISTENCE_API_CONFIG.saveProjects.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projects)
-      }).catch(e => console.error("Redis Project Sync Error", e));
-    }
-  }, [projects, hasLoadedPersistence]);
-
-  // Persist Services on change
-  const handleUpdateServices = (updatedServices: Microservice[]) => {
-    setServices(updatedServices);
-    if (hasLoadedPersistence) {
-      const simpleData = updatedServices.map(({ id, name, description, url }) => ({
-        id, name, description, url
-      }));
-      fetch(PERSISTENCE_API_CONFIG.saveServices.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(simpleData)
-      }).catch(e => console.error("Redis Services Sync Error", e));
-    }
+  // Handlers for Data Mutation
+  const handleAddUser = (user: UserProfile) => {
+    setUsers(prev => {
+      const next = [...prev, user];
+      fetch(PERSISTENCE_API_CONFIG.saveUsers.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
+  };
+  const handleUpdateUser = (updated: UserProfile) => {
+    setUsers(prev => {
+      const next = prev.map(u => u.id === updated.id ? updated : u);
+      fetch(PERSISTENCE_API_CONFIG.saveUsers.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
+  };
+  const handleDeleteUser = (id: string) => {
+    setUsers(prev => {
+      const next = prev.filter(u => u.id !== id);
+      fetch(PERSISTENCE_API_CONFIG.saveUsers.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
   };
 
-  // Persist App Config (Gemini, Favorites, Theme, Role)
-  useEffect(() => {
-    if (hasLoadedPersistence) {
-      const config = {
-        gemini_enabled: geminiEnabled,
-        favorites: favoriteIds,
-        theme: isDarkMode ? 'dark' : 'light',
-        user_role: userRole
-      };
-      fetch(PERSISTENCE_API_CONFIG.saveAppConfig.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-      }).catch(e => console.error("Redis Config Sync Error", e));
-    }
-  }, [geminiEnabled, favoriteIds, isDarkMode, userRole, hasLoadedPersistence]);
-
-  // Handlers for Data Mutation
-  const handleAddUser = (user: UserProfile) => setUsers(prev => [...prev, user]);
-  const handleUpdateUser = (updated: UserProfile) => setUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-  const handleDeleteUser = (id: string) => setUsers(prev => prev.filter(u => u.id !== id));
-
-  const handleAddProject = (project: ProjectDefinition) => setProjects(prev => [...prev, project]);
-  const handleUpdateProject = (updated: ProjectDefinition) => setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-  const handleDeleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
+  const handleAddProject = (project: ProjectDefinition) => {
+    setProjects(prev => {
+      const next = [...prev, project];
+      fetch(PERSISTENCE_API_CONFIG.saveProjects.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
+  };
+  const handleUpdateProject = (updated: ProjectDefinition) => {
+    setProjects(prev => {
+      const next = prev.map(p => p.id === updated.id ? updated : p);
+      fetch(PERSISTENCE_API_CONFIG.saveProjects.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
+  };
+  const handleDeleteProject = (id: string) => {
+    setProjects(prev => {
+      const next = prev.filter(p => p.id !== id);
+      fetch(PERSISTENCE_API_CONFIG.saveProjects.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next) });
+      return next;
+    });
+  };
 
   // Filter Services based on Role
   const visibleServices = services.filter(s => {
