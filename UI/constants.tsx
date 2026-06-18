@@ -37,8 +37,9 @@ const getEnv = (key: string, fallback: string) => {
   }
 };
 
-const API_HOST = getEnv('VITE_API_HOST', 'localhost');
-const CONTROL_HOST = getEnv('VITE_CONTROL_HOST', 'localhost');
+const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const API_HOST = getEnv('VITE_API_HOST', currentHost);
+const CONTROL_HOST = getEnv('VITE_CONTROL_HOST', currentHost);
 
 const API_BASE = getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
 const UPLOAD_API_BASE = getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
