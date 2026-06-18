@@ -100,13 +100,13 @@ const DashboardHome: React.FC = () => {
       setData({
         activeWorkers: `${activeWorkersCount} Active`,
         workerTrend: activeWorkersCount > 0 ? "Cluster Ready" : "No Workers",
-        gpuUtilization: healthData.status === 'ok' ? "Online" : "Offline",
+        gpuUtilization: healthData.system ? `${healthData.system.cpu_percent}% CPU` : "N/A",
         queueDepth: `${totalQueued}`,
-        storageUsed: "Samba/MinIO",
-        redisMemory: healthData.redis === 'connected' ? "Connected" : "Disconnected",
-        redisLoad: healthData.redis === 'connected' ? 100 : 0,
-        minioBandwidth: "N/A",
-        minioLoad: 0,
+        storageUsed: healthData.system ? `${healthData.system.disk_used_percent}% Disk` : "Samba/MinIO",
+        redisMemory: healthData.redis_metrics ? healthData.redis_metrics.used_memory_human : "Connected",
+        redisLoad: healthData.system ? healthData.system.memory_used_gb / healthData.system.memory_total_gb * 100 : 0,
+        minioBandwidth: healthData.system ? `${healthData.system.disk_free_gb} GB Free` : "N/A",
+        minioLoad: healthData.system ? healthData.system.disk_used_percent : 0,
         estCompletion: totalQueued > 0 ? "Calculating..." : "Idle",
         activeJobs: mappedJobs
       });

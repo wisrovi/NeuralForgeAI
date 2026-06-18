@@ -9,6 +9,9 @@ from typing import Any, Optional
 import redis
 import yaml
 import json
+import psutil
+import shutil
+import time
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from celery.result import AsyncResult
@@ -282,13 +285,36 @@ async def save_config(config: dict[str, Any]):
 
 @app.get("/health")
 async def health_check():
-    """Checks connection to Redis."""
+    """Checks connection to Redis and retrieves system telemetry."""
+    telemetry = {
+        "status": "ok",
+        "redis": "disconnected",
+        "system": {
+            "cpu_percent": psutil.cpu_percent(interval=None),
+            "memory_used_gb": round(psutil.virtual_memory().used / (1024**3), 2),
+            "memory_total_gb": round(psutil.virtual_memory().total / (1024**3), 2),
+            "disk_used_percent": psutil.disk_usage('/').percent,
+            "disk_free_gb": round(psutil.disk_usage('/').free / (1024**3), 2),
+            "disk_total_gb": round(psutil.disk_usage('/').total / (1024**3), 2)
+        },
+        "timestamp": time.time()
+    }
     try:
         r = redis.from_url(celery_app.conf.broker_url)
         r.ping()
-        return {"status": "ok", "redis": "connected", "broker": celery_app.conf.broker_url}
+        telemetry["redis"] = "connected"
+        telemetry["broker"] = celery_app.conf.broker_url
+        
+        info = r.info()
+        telemetry["redis_metrics"] = {
+            "used_memory_human": info.get("used_memory_human"),
+            "used_memory": info.get("used_memory"),
+            "connected_clients": info.get("connected_clients")
+        }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        telemetry["status"] = "error"
+        telemetry["message"] = str(e)
+    return telemetry
 
 
 if __name__ == "__main__":
