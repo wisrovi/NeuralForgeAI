@@ -175,7 +175,7 @@ export const DEFAULT_MICROSERVICES: Microservice[] = [
     id: 'training-monitor',
     name: 'Training Monitor',
     description: 'Real-time loss curves and GPU utilization metrics',
-    url: 'https://en.wikipedia.org/wiki/Data_visualization', 
+    url: 'http://192.168.10.252:23444/', 
     icon: <Activity size={20} />,
     minRole: 'admin'
   },
