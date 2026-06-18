@@ -5,3 +5,4 @@ redis
 PyYAML
 pydantic
 python-multipart
+psutil
