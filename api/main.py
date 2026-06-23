@@ -136,6 +136,66 @@ async def get_status(study_id: str) -> dict[str, Any]:
     return response
 
 
+@app.get("/study/{study_id}")
+async def get_study_details(study_id: str) -> dict[str, Any]:
+    """Gets detailed study status: Celery state, active invoker, config metadata, and Redis data."""
+    res: AsyncResult = AsyncResult(study_id, app=celery_app)
+
+    response: dict[str, Any] = {
+        "study_id": study_id,
+        "state": str(res.state),
+        "ready": res.ready(),
+    }
+
+    if res.ready():
+        response["result"] = res.result
+        if isinstance(res.result, dict):
+            response["study_name"] = res.result.get("study_name", "")
+    if res.state == "FAILURE":
+        response["traceback"] = str(res.traceback) if res.traceback else str(res.result)
+
+    # Search active workers for a related task
+    try:
+        inspector = celery_app.control.inspect(timeout=1.0)
+        active = inspector.active()
+        if active:
+            for worker, tasks in active.items():
+                for t in tasks:
+                    args_str = str(t.get("args", ""))
+                    if study_id in args_str:
+                        response["active_worker"] = worker
+                        response["active_task"] = {
+                            "id": t.get("id"),
+                            "name": t.get("name"),
+                            "args": args_str[:300],
+                        }
+                        break
+    except Exception:
+        pass
+
+    # Query Redis hashes published by the executor
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        for key in r.scan_iter(match=f"wyolo:request:*:{study_id}:*"):
+            raw = r.hget(key, "config")
+            if raw:
+                response["config"] = json.loads(raw)
+        for key in r.scan_iter(match=f"wyolo:results:*:{study_id}:*"):
+            raw = r.hget(key, "results")
+            if raw:
+                response["results_data"] = json.loads(raw)
+                response["state"] = "COMPLETED"
+                response["ready"] = True
+        for key in r.scan_iter(match=f"wyolo:errors:*:{study_id}:*"):
+            raw = r.hget(key, "error")
+            if raw:
+                response["error_data"] = json.loads(raw)
+    except Exception:
+        pass
+
+    return response
+
+
 @app.get("/tasks")
 async def list_tasks() -> dict[str, Any]:
     """Lists tasks both in the Redis queue and currently running."""
