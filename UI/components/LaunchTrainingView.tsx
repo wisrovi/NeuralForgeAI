@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -21,6 +21,11 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [responseMsg, setResponseMsg] = useState('');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showTemplate, setShowTemplate] = useState(false);
+
+  const [studyQueryId, setStudyQueryId] = useState('');
+  const [studyStatus, setStudyStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [studyDetail, setStudyDetail] = useState<any>(null);
+  const [studyError, setStudyError] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -225,6 +230,46 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       setUploadStatus('error');
       setResponseMsg(error.message || 'Failed to connect to orchestration server. Please check your network.');
     }
+  };
+
+  const checkStudyStatus = async () => {
+    if (!studyQueryId.trim()) return;
+    setStudyStatus('loading');
+    setStudyDetail(null);
+    setStudyError('');
+
+    const baseUrl = UPLOAD_API_CONFIG.url.replace('/train', '');
+    try {
+      const res = await fetch(`${baseUrl}/study/${studyQueryId.trim()}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || 'Failed to fetch study status');
+      }
+      const data = await res.json();
+      setStudyDetail(data);
+      setStudyStatus('success');
+    } catch (err: any) {
+      setStudyError(err.message);
+      setStudyStatus('error');
+    }
+  };
+
+  const STATUS_COLORS: Record<string, string> = {
+    PENDING: 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800',
+    STARTED: 'text-blue-500 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800',
+    SUCCESS: 'text-green-500 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800',
+    FAILURE: 'text-red-500 bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800',
+    RETRY: 'text-orange-500 bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800',
+    REVOKED: 'text-gray-500 bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800',
+  };
+
+  const STATUS_ICONS: Record<string, any> = {
+    PENDING: Clock,
+    STARTED: Activity,
+    SUCCESS: CheckCircle,
+    FAILURE: AlertCircle,
+    RETRY: Loader2,
+    REVOKED: X,
   };
 
   const yamlTemplate = `debug: wisrovi
@@ -558,6 +603,143 @@ metadata:
         </div>
 
       </div>
+
+      {/* Study Status Checker */}
+      <div className="mt-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Search size={20} className="text-blue-500" />
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Check Study Status</h3>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Paste a Study ID to check its current state, active invoker, and configuration.
+        </p>
+
+        <div className="flex gap-3 mb-4">
+          <input
+            type="text"
+            value={studyQueryId}
+            onChange={(e) => setStudyQueryId(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && checkStudyStatus()}
+            placeholder="Paste Study ID (UUID)..."
+            className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+          <button
+            onClick={checkStudyStatus}
+            disabled={studyStatus === 'loading' || !studyQueryId.trim()}
+            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {studyStatus === 'loading' ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Search size={16} />
+            )}
+            Check
+          </button>
+        </div>
+
+        {studyStatus === 'error' && (
+          <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 text-red-800 dark:text-red-200 rounded-xl text-sm flex items-start gap-3">
+            <AlertCircle size={18} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Lookup Failed</p>
+              <p className="opacity-90 mt-0.5">{studyError}</p>
+            </div>
+          </div>
+        )}
+
+        {studyStatus === 'success' && studyDetail && (
+          <div className="animate-fade-in space-y-4">
+            {/* Status Badge */}
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-bold ${
+              STATUS_COLORS[studyDetail.state] || 'text-gray-500 bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
+            }`}>
+              {(() => {
+                const Icon = STATUS_ICONS[studyDetail.state] || Info;
+                return <Icon size={18} className={studyDetail.state === 'RETRY' ? 'animate-spin' : ''} />;
+              })()}
+              {studyDetail.state}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {/* Study ID */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Study ID</span>
+                <span className="font-mono text-gray-900 dark:text-white break-all">{studyDetail.study_id}</span>
+              </div>
+
+              {/* Study Name */}
+              {studyDetail.study_name && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Study Name</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{studyDetail.study_name}</span>
+                </div>
+              )}
+
+              {/* Active Invoker */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Invoker</span>
+                {studyDetail.active_worker ? (
+                  <div className="flex items-center gap-2">
+                    <Server size={16} className="text-blue-500" />
+                    <span className="font-medium text-gray-900 dark:text-white">{studyDetail.active_worker}</span>
+                  </div>
+                ) : (
+                  <span className="text-gray-400 italic">No active invoker (pending or finished)</span>
+                )}
+              </div>
+
+              {/* Active Task */}
+              {studyDetail.active_task && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Task</span>
+                  <span className="font-mono text-xs text-gray-900 dark:text-white break-all">{studyDetail.active_task.name}</span>
+                </div>
+              )}
+
+              {/* Config */}
+              {studyDetail.config && (
+                <div className="md:col-span-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Configuration</span>
+                  <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40">
+                    {JSON.stringify(studyDetail.config, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Results */}
+              {studyDetail.results_data && (
+                <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
+                  <span className="block text-xs font-medium text-green-600 dark:text-green-400 mb-1">Results</span>
+                  <pre className="text-xs font-mono text-green-800 dark:text-green-200">
+                    {JSON.stringify(studyDetail.results_data, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Error */}
+              {studyDetail.error_data && (
+                <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
+                  <span className="block text-xs font-medium text-red-600 dark:text-red-400 mb-1">Error</span>
+                  <pre className="text-xs font-mono text-red-800 dark:text-red-200">
+                    {JSON.stringify(studyDetail.error_data, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {/* Traceback */}
+              {studyDetail.traceback && (
+                <div className="md:col-span-2 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
+                  <span className="block text-xs font-medium text-red-600 dark:text-red-400 mb-1">Traceback</span>
+                  <pre className="text-xs font-mono text-red-800 dark:text-red-200 overflow-x-auto max-h-60 whitespace-pre-wrap">
+                    {studyDetail.traceback}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
