@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, FileJson } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, FileJson, Search } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -18,6 +18,12 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [responseMsg, setResponseMsg] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showTemplate, setShowTemplate] = useState(false);
+  
+  // Tracking status state
+  const [lookupTaskId, setLookupTaskId] = useState('');
+  const [lookupResult, setLookupResult] = useState<any>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,7 +126,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       console.log('Submission success:', data);
       
       setUploadStatus('success');
-      setResponseMsg(`Training job for '${project?.name}' submitted successfully. Job ID: ${data.id || 'Job-X99'}`);
+      setResponseMsg(`Training job for '${project?.name}' submitted successfully. Job ID: ${data.study_id || 'Job-X99'}`);
       
       setTimeout(() => {
         setFile(null);
@@ -132,6 +138,27 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       console.error(error);
       setUploadStatus('error');
       setResponseMsg('Failed to connect to orchestration server. Please check your network.');
+    }
+  };
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lookupTaskId) return;
+
+    setLookupLoading(true);
+    setLookupError(null);
+    setLookupResult(null);
+
+    try {
+      const apiBase = UPLOAD_API_CONFIG.url.replace('/train', '');
+      const response = await fetch(`${apiBase}/status/${lookupTaskId.trim()}`);
+      if (!response.ok) throw new Error('Task status lookup failed');
+      const data = await response.json();
+      setLookupResult(data);
+    } catch (err: any) {
+      setLookupError(err.message || 'Failed to fetch task status');
+    } finally {
+      setLookupLoading(false);
     }
   };
 
@@ -382,6 +409,90 @@ sweeper:
                  </div>
                </li>
              </ul>
+          </div>
+
+          {/* Task Status Lookup Widget */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <Search size={18} className="text-blue-500" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Track Training Status</h3>
+            </div>
+            
+            <form onSubmit={handleLookup} className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter Study/Task ID..."
+                value={lookupTaskId}
+                onChange={(e) => setLookupTaskId(e.target.value)}
+                className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={lookupLoading || !lookupTaskId}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {lookupLoading ? 'Loading...' : 'Track'}
+              </button>
+            </form>
+
+            {lookupError && (
+              <div className="text-xs text-red-500 dark:text-red-400 flex items-center gap-1">
+                <AlertCircle size={14} />
+                {lookupError}
+              </div>
+            )}
+
+            {lookupResult && (
+              <div className="text-sm border-t border-gray-100 dark:border-gray-800 pt-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 dark:text-gray-400 text-xs">Status:</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    lookupResult.state === 'SUCCESS' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                    lookupResult.state === 'FAILURE' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                    'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                  }`}>
+                    {lookupResult.state}
+                  </span>
+                </div>
+
+                {lookupResult.active_trial ? (
+                  <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-3 space-y-1">
+                    <div className="text-xs font-semibold text-blue-800 dark:text-blue-300">Active Trial Details</div>
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <span>Worker/Invoker:</span>
+                      <span className="font-mono font-semibold">{lookupResult.active_trial.invoker}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                      <span>Runtime:</span>
+                      <span>{lookupResult.active_trial.runtime}s</span>
+                    </div>
+                  </div>
+                ) : lookupResult.state === 'PENDING' || lookupResult.state === 'STARTED' ? (
+                  <div className="text-xs text-gray-500 italic">No active GPU trial currently running. Orchestrator might be booting or trials are waiting.</div>
+                ) : null}
+
+                {lookupResult.error && (
+                  <div className="bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-lg p-3 space-y-1">
+                    <div className="text-xs font-semibold text-red-800 dark:text-red-300">Failure Reason</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 break-all max-h-24 overflow-y-auto custom-scrollbar font-mono">
+                      {lookupResult.error}
+                    </div>
+                  </div>
+                )}
+
+                {lookupResult.result && (
+                  <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 rounded-lg p-3 space-y-1">
+                    <div className="text-xs font-semibold text-green-800 dark:text-green-300">Best Trial Found</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      <div>Value: <span className="font-semibold text-gray-900 dark:text-white">{(lookupResult.result.best_value || lookupResult.result.accuracy || 0).toFixed(4)}</span></div>
+                      <div className="mt-1 font-mono text-[10px] max-h-20 overflow-y-auto custom-scrollbar">
+                        {JSON.stringify(lookupResult.result.best_params || lookupResult.result, null, 2)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

@@ -8,7 +8,7 @@ services:
         - VITE_MLFLOW_TRACKING_URI=http://${CONTROL_HOST:-localhost}:23435
         - VITE_REDIS_TRACKING_URL=http://${CONTROL_HOST:-localhost}:23438/
         - VITE_FILEBROWSER_URL=http://${CONTROL_HOST:-localhost}:23448/files/
-    image: wisrovi/train_service:w_darwin_ops_frontend_v1.0.0
+    image: wisrovi/train_service:w_darwin_ops_frontend_v1.1.0
     ports:
       - "23432:4173"
     environment:
