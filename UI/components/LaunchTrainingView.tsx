@@ -1,15 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
-import { UserProfile, ProjectDefinition } from '../types';
+import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
 
 interface LaunchTrainingViewProps {
   users: UserProfile[];
   projects: ProjectDefinition[];
+  userRole?: UserRole;
 }
 
-const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects }) => {
+const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects, userRole }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [mode, setMode] = useState<'public' | 'private'>('public');
@@ -28,6 +29,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [studyError, setStudyError] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const studyCheckerRef = useRef<HTMLDivElement>(null);
 
   const validateFileContent = (fileToValidate: File): Promise<string[] | null> => {
     return new Promise((resolve) => {
@@ -219,6 +221,34 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       setUploadStatus('success');
       setResponseMsg(`Training job for '${project?.name}' submitted successfully. Study ID: ${data.study_id}`);
       
+      // Auto-fill the study query field and select it for tracking
+      setStudyQueryId(data.study_id);
+      
+      // Scroll to the status checker
+      setTimeout(() => {
+        studyCheckerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+      // Trigger status check immediately
+      setTimeout(async () => {
+        setStudyStatus('loading');
+        setStudyDetail(null);
+        setStudyError('');
+        try {
+          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
+          const res = await fetch(`${baseUrl}/study/${data.study_id}`);
+          const detailData = await res.json();
+          if (!res.ok) {
+            throw new Error(detailData.detail || 'Failed to fetch study status');
+          }
+          setStudyDetail(detailData);
+          setStudyStatus('success');
+        } catch (err: any) {
+          setStudyError(err.message);
+          setStudyStatus('error');
+        }
+      }, 500);
+
       setTimeout(() => {
         setFile(null);
         setUploadStatus('idle');
@@ -229,6 +259,102 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
       console.error(error);
       setUploadStatus('error');
       setResponseMsg(error.message || 'Failed to connect to orchestration server. Please check your network.');
+    }
+  };
+
+  const handleLaunchSmokeTest = async () => {
+    setUploadStatus('uploading');
+    setResponseMsg('');
+    setValidationErrors([]);
+
+    const smokeTestYaml = `model: yolov8n-cls.pt
+type: yolo
+dry_run: true
+train:
+  batch: -1
+  data: "/datasets/examples/classification/colorball.v8i.multiclass/"
+  epochs: 1
+  imgsz: 640
+  device: 0
+sweeper:
+  version: 1
+  algorithm: optuna
+  direction: maximize
+  fitness: metrics/accuracy_top1
+  study_name: "smoke_test_api_cancel_study"
+  tune: true
+  sampler: RandomSampler
+  n_trials: 5
+  priority: "low"
+metadata:
+  author: "Smoke Test Runner"
+  content: "Automatic dry-run E2E integration test through UI."
+`;
+
+    const blob = new Blob([smokeTestYaml], { type: 'application/x-yaml' });
+    const smokeTestFile = new window.File([blob], 'smoke_test_config.yaml', { type: 'application/x-yaml' });
+
+    const formData = new FormData();
+    formData.append('config_file', smokeTestFile);
+    formData.append('mode', 'public');
+    formData.append('priority', 'low');
+
+    try {
+      console.log('Sending smoke test request to URL:', UPLOAD_API_CONFIG.url);
+      const response = await fetch(UPLOAD_API_CONFIG.url, {
+        method: UPLOAD_API_CONFIG.method,
+        body: formData,
+      });
+
+      console.log('Received response with status:', response.status);
+      const data = await response.json();
+      console.log('Parsed response JSON data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Upload failed');
+      }
+      
+      console.log('Smoke Test Submission success:', data);
+      
+      setUploadStatus('success');
+      setResponseMsg(`Smoke test submitted successfully. Study ID: ${data.study_id}`);
+      
+      // Auto-fill the study query field and select it for tracking
+      setStudyQueryId(data.study_id);
+      
+      // Prominent browser alert containing the Study ID for the user
+      alert(`Smoke test successfully launched!\nStudy ID: ${data.study_id}`);
+      
+      // Scroll to the status checker
+      setTimeout(() => {
+        studyCheckerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      
+      // Trigger status check immediately
+      setTimeout(async () => {
+        setStudyStatus('loading');
+        setStudyDetail(null);
+        setStudyError('');
+        try {
+          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
+          const res = await fetch(`${baseUrl}/study/${data.study_id}`);
+          const detailData = await res.json();
+          if (!res.ok) {
+            throw new Error(detailData.detail || 'Failed to fetch study status');
+          }
+          setStudyDetail(detailData);
+          setStudyStatus('success');
+        } catch (err: any) {
+          setStudyError(err.message);
+          setStudyStatus('error');
+        }
+      }, 500);
+
+    } catch (error: any) {
+      console.error('Smoke test launch caught error:', error);
+      setUploadStatus('error');
+      setResponseMsg(error.message || 'Failed to launch smoke test.');
+      alert(`Error launching smoke test:\n${error.message || error}`);
     }
   };
 
@@ -311,9 +437,23 @@ metadata:
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up pb-10">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Launch Training</h2>
-        <p className="text-gray-500 dark:text-gray-400">Configure and deploy new training jobs to the GPU cluster.</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+            Launch Training
+            {userRole === 'admin' && (
+              <button
+                type="button"
+                onClick={handleLaunchSmokeTest}
+                className="opacity-[0.08] hover:opacity-80 transition-all duration-300 p-1 text-gray-400 hover:text-blue-500 rounded cursor-pointer"
+                title="Launch Integration Smoke Test"
+              >
+                <Activity size={16} className="animate-pulse" />
+              </button>
+            )}
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400">Configure and deploy new training jobs to the GPU cluster.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -605,7 +745,7 @@ metadata:
       </div>
 
       {/* Study Status Checker */}
-      <div className="mt-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
+      <div ref={studyCheckerRef} className="mt-12 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Search size={20} className="text-blue-500" />
           <h3 className="text-lg font-bold text-gray-900 dark:text-white">Check Study Status</h3>
@@ -613,6 +753,16 @@ metadata:
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Paste a Study ID to check its current state, active invoker, and configuration.
         </p>
+
+        {uploadStatus === 'success' && responseMsg && (
+          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 text-green-800 dark:text-green-200 rounded-xl text-sm flex items-start gap-3 animate-fade-in">
+            <CheckCircle size={18} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold">Successfully Launched</p>
+              <p className="opacity-90 mt-0.5">{responseMsg}</p>
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3 mb-4">
           <input
@@ -677,7 +827,7 @@ metadata:
 
               {/* Active Invoker */}
               <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Invoker</span>
+                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active / Last Invoker</span>
                 {studyDetail.active_worker ? (
                   <div className="flex items-center gap-2">
                     <Server size={16} className="text-blue-500" />
@@ -685,6 +835,18 @@ metadata:
                   </div>
                 ) : (
                   <span className="text-gray-400 italic">No active invoker (pending or finished)</span>
+                )}
+                {studyDetail.all_invokers && studyDetail.all_invokers.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+                    <span className="text-gray-500 dark:text-gray-400 block mb-1">All Participating Invokers:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {studyDetail.all_invokers.map((inv: string) => (
+                        <span key={inv} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-mono text-[11px] border border-blue-200 dark:border-blue-800/50">
+                          {inv}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 

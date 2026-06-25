@@ -29,10 +29,12 @@ const ApiDocsView: React.FC = () => {
     { id: 'examples', name: 'Automation Examples', icon: <Code size={18} /> },
   ];
 
+  const currentHost = typeof window !== 'undefined' ? window.location.hostname : '192.168.1.137';
+
   const pythonExample = `import requests
 
 # API Configuration
-API_URL = "http://192.168.10.252:23442/train"
+API_URL = "http://${currentHost}:23442/train"
 
 def launch_training(yaml_path, mode="public", priority="medium"):
     """Launches a training job via script."""
