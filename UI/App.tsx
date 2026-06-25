@@ -313,7 +313,7 @@ const App: React.FC = () => {
             ) : activeService.id === 'api-docs' ? (
               <ApiDocsView />
             ) : activeService.id === 'launch-training' ? (
-              <LaunchTrainingView users={users} projects={projects} />
+              <LaunchTrainingView users={users} projects={projects} userRole={userRole} />
             ) : activeService.id === 'users' ? (
               <UserManagementView 
                 users={users} 

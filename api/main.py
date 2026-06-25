@@ -193,7 +193,51 @@ async def get_study_details(study_id: str) -> dict[str, Any]:
     except Exception:
         pass
 
+    # Retrieve config, ETA/Progress, and invoker details from Redis
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        config_raw = r.get(f"study:{study_id}:config")
+        if config_raw:
+            response["config"] = json.loads(config_raw)
+            
+        progress_raw = r.get(f"study:{study_id}:progress")
+        if progress_raw:
+            progress = json.loads(progress_raw)
+            response["eta"] = progress.get("eta")
+            response["completed_trials"] = progress.get("completed_trials")
+            response["total_trials"] = progress.get("total_trials")
+            
+        # Active trial/invoker check
+        active_trial_raw = r.get(f"study:{study_id}:active_trial")
+        if active_trial_raw:
+            active_trial = json.loads(active_trial_raw)
+            response["active_trial"] = active_trial
+            response["active_worker"] = active_trial.get("invoker")
+        else:
+            # Fallback to recorded invoker
+            recorded_invoker = r.get(f"study:{study_id}:invoker")
+            if recorded_invoker:
+                response["active_worker"] = recorded_invoker.decode()
+                
+        # Retrieve all participating invokers
+        all_invokers_set = r.smembers(f"study:{study_id}:all_invokers")
+        if all_invokers_set:
+            response["all_invokers"] = [v.decode() for v in all_invokers_set]
+    except Exception:
+        pass
+
     return response
+
+
+@app.post("/study/{study_id}/cancel")
+async def cancel_study(study_id: str) -> dict[str, str]:
+    """Gracefully requests cancellation of a study by setting a Redis flag."""
+    try:
+        r = redis.from_url(celery_app.conf.broker_url)
+        r.set(f"study:{study_id}:cancel", "1", ex=3600)
+        return {"status": "Cancellation requested", "study_id": study_id}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.get("/tasks")
