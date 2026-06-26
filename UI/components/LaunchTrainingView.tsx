@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame } from 'lucide-react';
-=======
 import React, { useState, useRef, useEffect } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity } from 'lucide-react';
->>>>>>> 8894bc8 ([FEATURE] Enhance LaunchTrainingView with invoker details and smoke test)
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -35,35 +30,6 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const studyCheckerRef = useRef<HTMLDivElement>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startPolling = (studyId: string) => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
-    const poll = async () => {
-      setStudyStatus('loading');
-      try {
-        const res = await fetch(`${baseUrl}/study/${studyId}`);
-        const detailData = await res.json();
-        if (!res.ok) throw new Error(detailData.detail || 'Failed to fetch study status');
-        setStudyDetail(detailData);
-        setStudyStatus('success');
-        if (['SUCCESS', 'FAILURE', 'REVOKED'].includes(detailData.state)) {
-          if (pollingRef.current) clearInterval(pollingRef.current);
-        }
-      } catch (err: any) {
-        setStudyError(err.message);
-        setStudyStatus('error');
-        if (pollingRef.current) clearInterval(pollingRef.current);
-      }
-    };
-    poll();
-    pollingRef.current = setInterval(poll, 3000);
-  };
-
-  useEffect(() => {
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
-  }, []);
 
   const validateFileContent = (fileToValidate: File): Promise<string[] | null> => {
     return new Promise((resolve) => {
@@ -263,30 +229,8 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
         studyCheckerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
 
-<<<<<<< HEAD
-      // Trigger status check immediately
-      setTimeout(async () => {
-        setStudyStatus('loading');
-        setStudyDetail(null);
-        setStudyError('');
-        try {
-          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
-          const res = await fetch(`${baseUrl}/study/${data.study_id}`);
-          const detailData = await res.json();
-          if (!res.ok) {
-            throw new Error(detailData.detail || 'Failed to fetch study status');
-          }
-          setStudyDetail(detailData);
-          setStudyStatus('success');
-        } catch (err: any) {
-          setStudyError(err.message);
-          setStudyStatus('error');
-        }
-      }, 500);
-=======
       // Poll study status until completion
       startPolling(data.study_id);
->>>>>>> 8894bc8 ([FEATURE] Enhance LaunchTrainingView with invoker details and smoke test)
 
       setTimeout(() => {
         setFile(null);
@@ -369,8 +313,25 @@ metadata:
         studyCheckerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
       
-      // Poll study status until completion
-      startPolling(data.study_id);
+      // Trigger status check immediately
+      setTimeout(async () => {
+        setStudyStatus('loading');
+        setStudyDetail(null);
+        setStudyError('');
+        try {
+          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
+          const res = await fetch(`${baseUrl}/study/${data.study_id}`);
+          const detailData = await res.json();
+          if (!res.ok) {
+            throw new Error(detailData.detail || 'Failed to fetch study status');
+          }
+          setStudyDetail(detailData);
+          setStudyStatus('success');
+        } catch (err: any) {
+          setStudyError(err.message);
+          setStudyStatus('error');
+        }
+      }, 500);
 
     } catch (error: any) {
       console.error('Smoke test launch caught error:', error);
