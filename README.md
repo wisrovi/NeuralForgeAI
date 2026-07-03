@@ -1,33 +1,50 @@
 # NeuralForgeAI - Frontend & API Gateway
 
-Este repositorio contiene la interfaz de usuario y la API de control para el ecosistema NeuralForgeAI.
+This repository contains the web user interface dashboard (WDarwin Ops) and the centralized API Gateway for the NeuralForgeAI YOLO training cluster ecosystem.
 
-## Estructura
-- `UI/`: Aplicación frontend en React (Vite + TypeScript).
-- `api/`: API Gateway construida con FastAPI y Celery.
+---
 
-## Instrucciones
+## 📂 Repository Structure
+*   `UI/`: React frontend application built with Vite, TypeScript, and Tailwind CSS.
+*   `api/`: REST API Gateway built with FastAPI and Celery.
 
-### Frontend (UI)
+---
+
+## 🚀 Getting Started
+
+### 1. Frontend Dashboard (UI)
 ```bash
 cd UI
 npm install
 npm run dev
 ```
 
-### API Gateway
+### 2. API Gateway
 ```bash
 cd api
-# Asegúrate de configurar control_host.env
-docker-compose up -d
+# Make sure control_host.env is configured
+docker compose up -d
 ```
 
-### Configuración de Red
-Ambos servicios están configurados para usar la red externa `train_service`. Asegúrate de que esta red exista:
+### 3. Docker Network Configuration
+Both microservices connect via the shared external Docker network `control_network`. Ensure this network exists before starting containers:
 ```bash
-docker network create train_service
+docker network create control_network
 ```
 
-### Variables de Entorno
-- La API usa `api/control_host.env` para configurar el acceso al cluster.
-- El Frontend usa `UI/.env` para las URLs de los servicios (Vite).
+### 4. Environment Variables
+*   The API Gateway reads `api/control_host.env` for cluster endpoints configuration.
+*   The UI dashboard reads `UI/.env` for Vite endpoints mapping (API, Redis, MLflow, FileBrowser).
+
+---
+
+## 📜 Changelog & Version History
+
+### Version 2.0.0 (Current Release) - 2026-07-03
+*   **Advanced E2E Smoke Test Integration:** Added E2E training validation button (Flame icon) in React UI header to concurrently submit classification, detection, and segmentation trials.
+*   **Optuna cancellation support:** Added `POST /study/{study_id}/cancel` API endpoint to gracefully interrupt active training sweeps.
+*   **Cleaned layout build:** Upgraded Vite UI container dependencies to run builds smoothly under Node 18 environments.
+
+### Version 1.0.0 (Initial Release) - 2026-02-10
+*   FastAPI backend endpoints managing study uploads.
+*   React dashboard UI mapping live node telemetry and basic activity checks.
