@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -357,6 +357,180 @@ metadata:
       alert(`Error launching smoke test:\n${error.message || error}`);
     }
   };
+ 
+  const handleLaunchAdvancedSmokeTest = async () => {
+    setUploadStatus('uploading');
+    setResponseMsg('');
+    setValidationErrors([]);
+
+    const configs = [
+      {
+        name: 'colorball_classification.yaml',
+        yaml: `model: yolo26n-cls.pt
+type: yolo
+train:
+  batch: -1
+  data: "/examples/colorball.v8i.multiclass/"
+  epochs: 5
+  imgsz: 640
+  plots: false
+sweeper:
+  version: 1
+  algorithm: optuna
+  direction: maximize
+  study_name: "color_ball_classification"
+  fitness: "metrics/accuracy_top1"
+  tune: false
+  sampler: "TPESampler"
+  n_trials: 1
+  search_space:
+    model: [ "choice", "yolov8n-cls.pt" ]
+    train:
+      imgsz: [ "choice", 416 ]
+      lr0: [ "loguniform", 1e-5, 1e-2 ]
+extras:
+  gpu:
+    id: 0
+    limit: 0.95
+metadata:
+  content: "Prueba avanzada de humo de clasificación."
+  author: "Smoke Test Runner"
+  documentation: "Prueba avanzada de humo."
+`
+      },
+      {
+        name: 'component_detection.yaml',
+        yaml: `model: yolo26n.pt
+type: yolo
+train:
+  batch: -1
+  data: "/examples/Deteksi komponen elektronik.v1i.yolov8/data.yaml"
+  epochs: 2
+  imgsz: 640
+  plots: true
+sweeper:
+  version: 1
+  algorithm: optuna
+  direction: maximize
+  study_name: "component_detection"
+  fitness: "metrics/mAP50"
+  tune: false
+  sampler: "TPESampler"
+  n_trials: 1
+  search_space:
+    model: [ "choice", "yolov8n.pt" ]
+    train:
+      imgsz: [ "choice", 416 ]
+      lr0: [ "loguniform", 1e-5, 1e-2 ]
+extras:
+  gpu:
+    id: 0
+    limit: 0.95
+metadata:
+  content: "Prueba avanzada de humo de detección."
+  author: "Smoke Test Runner"
+  documentation: "Prueba avanzada de humo."
+`
+      },
+      {
+        name: 'architecture_segmentation.yaml',
+        yaml: `model: yolo26n-seg.pt
+type: yolo
+train:
+  batch: -1
+  data: "/examples/ArchitecturePlan/data.yaml"
+  epochs: 2
+  imgsz: 640
+  plots: true
+sweeper:
+  version: 1
+  algorithm: optuna
+  direction: maximize
+  study_name: "architecture_segmentation"
+  fitness: "metrics/mAP50(M)"
+  tune: false
+  sampler: "TPESampler"
+  n_trials: 1
+  search_space:
+    model: [ "choice", "yolov8n-seg.pt" ]
+    train:
+      imgsz: [ "choice", 416 ]
+      lr0: [ "loguniform", 1e-5, 1e-2 ]
+extras:
+  gpu:
+    id: 0
+    limit: 0.95
+metadata:
+  content: "Prueba avanzada de humo de segmentación."
+  author: "Smoke Test Runner"
+  documentation: "Prueba avanzada de humo."
+`
+      }
+    ];
+
+    try {
+      const studyIds: string[] = [];
+      for (const config of configs) {
+        const blob = new Blob([config.yaml], { type: 'application/x-yaml' });
+        const smokeFile = new window.File([blob], config.name, { type: 'application/x-yaml' });
+
+        const formData = new FormData();
+        formData.append('config_file', smokeFile);
+        formData.append('mode', 'public');
+        formData.append('priority', 'low');
+
+        console.log(`Sending advanced smoke test request for ${config.name} to URL:`, UPLOAD_API_CONFIG.url);
+        const response = await fetch(UPLOAD_API_CONFIG.url, {
+          method: UPLOAD_API_CONFIG.method,
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || `Upload failed for ${config.name}`);
+        }
+        studyIds.push(data.study_id);
+      }
+
+      setUploadStatus('success');
+      setResponseMsg(`Advanced smoke test submitted successfully. Study IDs: ${studyIds.join(', ')}`);
+      
+      // Auto-fill query ID with the last study ID for status tracking
+      setStudyQueryId(studyIds[studyIds.length - 1]);
+      
+      alert(`Advanced smoke test successfully launched!\nStudies: ${studyIds.join(', ')}`);
+      
+      setTimeout(() => {
+        studyCheckerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+
+      // Trigger status check immediately for the last one
+      setTimeout(async () => {
+        setStudyStatus('loading');
+        setStudyDetail(null);
+        setStudyError('');
+        try {
+          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
+          const res = await fetch(`${baseUrl}/study/${studyIds[studyIds.length - 1]}`);
+          const detailData = await res.json();
+          if (!res.ok) {
+            throw new Error(detailData.detail || 'Failed to fetch study status');
+          }
+          setStudyDetail(detailData);
+          setStudyStatus('success');
+        } catch (err: any) {
+          setStudyError(err.message);
+          setStudyStatus('error');
+        }
+      }, 500);
+
+    } catch (error: any) {
+      console.error('Advanced smoke test launch caught error:', error);
+      setUploadStatus('error');
+      setResponseMsg(error.message || 'Failed to launch advanced smoke test.');
+      alert(`Error launching advanced smoke test:\n${error.message || error}`);
+    }
+  };
 
   const checkStudyStatus = async () => {
     if (!studyQueryId.trim()) return;
@@ -442,14 +616,24 @@ metadata:
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
             Launch Training
             {userRole === 'admin' && (
-              <button
-                type="button"
-                onClick={handleLaunchSmokeTest}
-                className="opacity-[0.08] hover:opacity-80 transition-all duration-300 p-1 text-gray-400 hover:text-blue-500 rounded cursor-pointer"
-                title="Launch Integration Smoke Test"
-              >
-                <Activity size={16} className="animate-pulse" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleLaunchSmokeTest}
+                  className="opacity-[0.08] hover:opacity-80 transition-all duration-300 p-1 text-gray-400 hover:text-blue-500 rounded cursor-pointer"
+                  title="Launch Integration Smoke Test"
+                >
+                  <Activity size={16} className="animate-pulse" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLaunchAdvancedSmokeTest}
+                  className="opacity-[0.08] hover:opacity-80 transition-all duration-300 p-1 text-gray-400 hover:text-orange-500 rounded cursor-pointer"
+                  title="Launch Advanced E2E Smoke Test (3 Datasets)"
+                >
+                  <Flame size={16} className="animate-pulse" />
+                </button>
+              </div>
             )}
           </h2>
           <p className="text-gray-500 dark:text-gray-400">Configure and deploy new training jobs to the GPU cluster.</p>
