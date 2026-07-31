@@ -86,6 +86,13 @@ export const PERSISTENCE_API_CONFIG = {
     method: 'POST'
   }
 };
+// Admin API Configuration
+export const ADMIN_API_CONFIG = {
+  broadcastPull: {
+    url: `${API_BASE}/admin/broadcast-pull`,
+    method: 'POST'
+  }
+};
 
 // Dashboard API Configuration
 export const DASHBOARD_API_CONFIG = {
