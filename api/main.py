@@ -419,6 +419,50 @@ async def health_check():
         telemetry["status"] = "error"
         telemetry["message"] = str(e)
     return telemetry
+@app.post("/admin/broadcast-pull")
+async def trigger_broadcast_pull(payload: dict) -> dict:
+    """Sends a remote control broadcast command to all active celery workers to pull a docker image."""
+    image_name = payload.get("image_name", "wisrovi/train_service:worker_executor_v1.0.0")
+    try:
+        # Send broadcast control command force_docker_pull
+        responses = celery_app.control.broadcast(
+            "force_docker_pull",
+            arguments={"image_name": image_name},
+            reply=True,
+            timeout=8.0
+        )
+        
+        if not responses:
+            return {
+                "success": False,
+                "message": "No active workers responded. Make sure the invoker nodes are online."
+            }
+            
+        formatted_responses = {}
+        success_count = 0
+        failed_count = 0
+        
+        for response in responses:
+            for node, details in response.items():
+                if isinstance(details, dict):
+                    status = details.get("status", "unknown")
+                    if status == "success":
+                        success_count += 1
+                    else:
+                        failed_count += 1
+                    formatted_responses[node] = details
+                else:
+                    failed_count += 1
+                    formatted_responses[node] = {"status": "error", "error": str(details)}
+                    
+        return {
+            "success": True,
+            "image": image_name,
+            "summary": f"Broadcast pull sent. {success_count} nodes succeeded, {failed_count} nodes failed/timed out.",
+            "responses": formatted_responses
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to trigger Celery broadcast: {str(e)}")
 
 
 if __name__ == "__main__":
