@@ -40,7 +40,10 @@ docker network create control_network
 
 ## 📜 Changelog & Version History
 
-### Version 2.0.0 (Current Release) - 2026-07-03
+### Version 2.1.0 (Current Release) - 2026-07-31
+*   **Cluster Broadcast Docker Pull Interface:** Added a new Cluster Admin tab (accessible for administrators only) in the UI settings panel and registered the `/admin/broadcast-pull` API endpoint in the FastAPI gateway, allowing immediate, massive docker image updates to all remote invokers in the cluster.
+
+### Version 2.0.0 - 2026-07-03
 *   **Advanced E2E Smoke Test Integration:** Added E2E training validation button (Flame icon) in React UI header to concurrently submit classification, detection, and segmentation trials.
 *   **Optuna cancellation support:** Added `POST /study/{study_id}/cancel` API endpoint to gracefully interrupt active training sweeps.
 *   **Cleaned layout build:** Upgraded Vite UI container dependencies to run builds smoothly under Node 18 environments.
