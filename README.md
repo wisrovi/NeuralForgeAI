@@ -51,3 +51,16 @@ docker network create control_network
 ### Version 1.0.0 (Initial Release) - 2026-02-10
 *   FastAPI backend endpoints managing study uploads.
 *   React dashboard UI mapping live node telemetry and basic activity checks.
+
+## Licensing and Usage
+
+This project uses a **Dual License** model:
+- **Community/Research**: Licensed under the AGPLv3. See [LICENSE](LICENSE).
+- **Commercial**: Requires a commercial license. See [COMMERCIAL.md](COMMERCIAL.md) for details.
+
+### Academic Research
+If you use this project in academic research, you are required to cite this repository using the provided `CITATION.cff` and notify the author with a link to your publication.
+
+
+## Changelog
+- Bumped version due to License update to AGPLv3 and Dual Licensing model.
