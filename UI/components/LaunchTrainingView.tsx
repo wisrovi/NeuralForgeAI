@@ -545,6 +545,7 @@ type: "yolo"
 train:
   data: /datasets/clasificacion/colorball.v8i.multiclass/
   epochs: 20
+  # time: 30  # Optional (in hours): overrides epochs and scales Invoker (1.3x) & Redis (2.0x) timeouts
   imgsz: 640
   device: 0
 
