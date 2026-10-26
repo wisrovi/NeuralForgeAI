@@ -61,6 +61,26 @@ async def start_training(
                 detail="Invalid YAML: content must be a dictionary"
             )
 
+        # Normalize optional train.time (in hours):
+        # - If omitted, None, or <= 0: remove 'time' so Ultralytics trains by 'epochs'.
+        # - If > 0: keep as float so Ultralytics trains by time and infra timeouts scale from it.
+        train_block = config_data.get("train")
+        user_time_hours: float | None = None
+        if isinstance(train_block, dict):
+            raw_time = train_block.get("time")
+            if raw_time is not None and not isinstance(raw_time, bool):
+                try:
+                    parsed_time = float(raw_time)
+                    if parsed_time > 0.0:
+                        user_time_hours = parsed_time
+                        train_block["time"] = user_time_hours
+                    else:
+                        train_block.pop("time", None)
+                except (ValueError, TypeError):
+                    train_block.pop("time", None)
+            else:
+                train_block.pop("time", None)
+
         if mode == "private":
             if not worker_name:
                 raise HTTPException(
@@ -76,6 +96,15 @@ async def start_training(
         job: AsyncResult = celery_app.send_task(
             "tasks.manage_study", args=[config_data], queue="managers"
         )
+
+        # Persist initial study config in Redis with 2.0x TTL (minimum 24h)
+        try:
+            ref_hours = user_time_hours if user_time_hours is not None else 12.0
+            redis_ttl = max(86400, int(ref_hours * 3600 * 2))
+            r_cli = redis.from_url(celery_app.conf.broker_url)
+            r_cli.set(f"study:{job.id}:config", json.dumps(config_data), ex=redis_ttl)
+        except Exception:
+            pass
 
         return {
             "status": "Queued",
