@@ -14,3 +14,5 @@ env/
 .codegraph/
 .opencode/
 graphify-out/
+.coverage
+.pytest_cache/
