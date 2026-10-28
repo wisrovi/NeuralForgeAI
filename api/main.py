@@ -19,6 +19,8 @@ from celery.result import AsyncResult
 # Import Celery app from the local configuration
 from celery_config import app as celery_app
 
+VERSION: str = "v1.2.1"
+
 app: FastAPI = FastAPI(title="ML CLUSTER API v5 - Strict Priority & Private Mode")
 
 # Configure CORS
@@ -40,6 +42,9 @@ async def start_training(
     ),
     priority: str = Form(
         "medium", description="Priority: high, medium, low (public mode only)"
+    ),
+    start_at: Optional[str] = Form(
+        None, description="Optional scheduled execution time ('HH:MM' or ISO format)"
     ),
 ) -> dict[str, str]:
     """Launches a new training study based on a YAML configuration."""
@@ -86,15 +91,56 @@ async def start_training(
                 raise HTTPException(
                     status_code=400, detail="Worker name is required for private mode"
                 )
-            if "sweeper" not in config_data:
+            if "sweeper" not in config_data or not isinstance(config_data.get("sweeper"), dict):
                 config_data["sweeper"] = {}
+            config_data["sweeper"]["debug"] = worker_name
+            config_data["debug"] = worker_name
             config_data["sweeper"]["target_worker_queue"] = worker_name
             target_info = f"private:{worker_name}"
         else:
             target_info = f"public:{priority}"
 
+        # Determine optional delayed start (scheduled training)
+        raw_start_at = (
+            start_at
+            or (config_data.get("start_at") if not isinstance(config_data.get("start_at"), bool) else None)
+            or (config_data.get("sweeper", {}).get("start_at") if isinstance(config_data.get("sweeper"), dict) else None)
+            or (config_data.get("schedule", {}).get("start_after") if isinstance(config_data.get("schedule"), dict) else None)
+            or (config_data.get("schedule", {}).get("start_at") if isinstance(config_data.get("schedule"), dict) else None)
+        )
+        eta_datetime = None
+        if raw_start_at:
+            from datetime import datetime as dt_sched, timedelta as td_sched
+            try:
+                raw_str = str(raw_start_at).strip()
+                now_dt = dt_sched.now()
+                if ":" in raw_str and len(raw_str) <= 8 and "-" not in raw_str:
+                    parts = raw_str.split(":")
+                    sh, sm = int(parts[0]), int(parts[1])
+                    candidate = now_dt.replace(hour=sh, minute=sm, second=0, microsecond=0)
+                    if candidate <= now_dt:
+                        candidate += td_sched(days=1)
+                    eta_datetime = candidate
+                else:
+                    candidate = dt_sched.fromisoformat(raw_str)
+                    if candidate.tzinfo is not None:
+                        now_with_tz = dt_sched.now(candidate.tzinfo)
+                        if candidate > now_with_tz:
+                            eta_datetime = candidate
+                    elif candidate > now_dt:
+                        eta_datetime = candidate
+            except Exception:
+                eta_datetime = None
+
+        if eta_datetime:
+            config_data.setdefault("schedule", {})["start_at"] = eta_datetime.isoformat()
+
+        send_kwargs: dict[str, Any] = {"args": [config_data], "queue": "managers"}
+        if eta_datetime:
+            send_kwargs["eta"] = eta_datetime
+
         job: AsyncResult = celery_app.send_task(
-            "tasks.manage_study", args=[config_data], queue="managers"
+            "tasks.manage_study", **send_kwargs
         )
 
         # Persist initial study config in Redis with 2.0x TTL (minimum 24h)
@@ -103,15 +149,21 @@ async def start_training(
             redis_ttl = max(86400, int(ref_hours * 3600 * 2))
             r_cli = redis.from_url(celery_app.conf.broker_url)
             r_cli.set(f"study:{job.id}:config", json.dumps(config_data), ex=redis_ttl)
+            if eta_datetime:
+                r_cli.set(f"study:{job.id}:scheduled_eta", eta_datetime.isoformat(), ex=redis_ttl)
+                r_cli.set(f"study:{job.id}:status", "SCHEDULED", ex=redis_ttl)
         except Exception:
             pass
 
-        return {
-            "status": "Queued",
+        resp_payload: dict[str, str] = {
+            "status": "Scheduled" if eta_datetime else "Queued",
             "study_id": str(job.id),
             "mode": mode,
             "routing": target_info,
         }
+        if eta_datetime:
+            resp_payload["scheduled_eta"] = eta_datetime.isoformat()
+        return resp_payload
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {exc}")
 
