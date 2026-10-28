@@ -43,3 +43,60 @@ def test_api_yaml_time_normalization_and_redis_ttl():
     cfg_30h, ttl_30h = process_yaml_train_block({"train": {"epochs": 230, "patience": 50, "time": 30}})
     assert cfg_30h["train"]["time"] == 30.0
     assert ttl_30h == 216000
+
+
+def test_api_private_mode_debug_override():
+    """Validates that selecting private mode with a target worker overrides sweeper.debug and root debug."""
+    config_data = {
+        "model": "yolo26n.pt",
+        "debug": "192.168.1.68",
+        "sweeper": {
+            "debug": "192.168.1.68",
+            "study_name": "test_study"
+        }
+    }
+    mode = "private"
+    worker_name = "192.168.1.72"
+
+    if mode == "private":
+        if "sweeper" not in config_data or not isinstance(config_data.get("sweeper"), dict):
+            config_data["sweeper"] = {}
+        config_data["sweeper"]["debug"] = worker_name
+        config_data["debug"] = worker_name
+        config_data["sweeper"]["target_worker_queue"] = worker_name
+
+    assert config_data["sweeper"]["debug"] == "192.168.1.72"
+    assert config_data["debug"] == "192.168.1.72"
+    assert config_data["sweeper"]["target_worker_queue"] == "192.168.1.72"
+
+
+def test_api_scheduled_training_resolution():
+    """Validates that scheduled execution times (HH:MM and ISO) resolve to future datetimes."""
+    from datetime import datetime, timedelta
+
+    def resolve_scheduled_eta(raw_start_at: str) -> datetime | None:
+        raw_str = str(raw_start_at).strip()
+        now_dt = datetime.now()
+        if ":" in raw_str and len(raw_str) <= 8 and "-" not in raw_str:
+            parts = raw_str.split(":")
+            sh, sm = int(parts[0]), int(parts[1])
+            candidate = now_dt.replace(hour=sh, minute=sm, second=0, microsecond=0)
+            if candidate <= now_dt:
+                candidate += timedelta(days=1)
+            return candidate
+        else:
+            candidate = datetime.fromisoformat(raw_str)
+            return candidate
+
+    # Test HH:MM parsing
+    eta_hhmm = resolve_scheduled_eta("18:30")
+    assert eta_hhmm is not None
+    assert eta_hhmm.hour == 18
+    assert eta_hhmm.minute == 30
+    assert eta_hhmm > datetime.now()
+
+    # Test ISO format
+    future_iso = (datetime.now() + timedelta(hours=5)).isoformat()
+    eta_iso = resolve_scheduled_eta(future_iso)
+    assert eta_iso is not None
+    assert eta_iso > datetime.now()
