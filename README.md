@@ -89,6 +89,7 @@ If you use this project in academic research, you are required to cite this repo
 
 
 ## Changelog
+- **v1.3.0**: Added visual Scheduled Start Time (`start_at`) control in `LaunchTrainingView.tsx` allowing developers to delay execution until specific wall-clock hours without conflicting with daytime work.
 - **v1.2.1**: Fixed private mode queue targeting by setting and overriding `sweeper.debug` and root `debug` with target worker name.
 - Bumped version due to License update to PolyForm Noncommercial and Dual Licensing model.
 
