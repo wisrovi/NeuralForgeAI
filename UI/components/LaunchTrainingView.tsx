@@ -16,6 +16,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [mode, setMode] = useState<'public' | 'private'>('public');
   const [priority, setPriority] = useState<'high' | 'medium' | 'low'>('medium');
   const [workerName, setWorkerName] = useState('');
+  const [startAt, setStartAt] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -203,6 +204,9 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     if (mode === 'private' && workerName) {
       formData.append('worker_name', workerName);
     }
+    if (startAt.trim()) {
+      formData.append('start_at', startAt.trim());
+    }
 
     try {
       const response = await fetch(UPLOAD_API_CONFIG.url, {
@@ -234,6 +238,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
 
       setTimeout(() => {
         setFile(null);
+        setStartAt('');
         setUploadStatus('idle');
         setResponseMsg('');
       }, 5000);
@@ -689,6 +694,33 @@ metadata:
                   />
                 </div>
               )}
+
+              {/* Scheduled Start Time (start_at) */}
+              <div className={mode === 'public' ? 'col-span-1' : 'col-span-1'}>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
+                  <Clock size={16} className="text-blue-500" />
+                  Scheduled Start Time (Optional)
+                </label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    value={startAt}
+                    onChange={(e) => setStartAt(e.target.value)}
+                    placeholder="e.g. 18:30 or 2026-10-29T18:30:00"
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-8"
+                  />
+                  {startAt && (
+                    <button
+                      type="button"
+                      onClick={() => setStartAt('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                      title="Clear schedule"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Custom Drag & Drop Component */}
