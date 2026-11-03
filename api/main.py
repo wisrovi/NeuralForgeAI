@@ -19,7 +19,7 @@ from celery.result import AsyncResult
 # Import Celery app from the local configuration
 from celery_config import app as celery_app
 
-VERSION: str = "v1.2.1"
+VERSION: str = "v1.2.2"
 
 app: FastAPI = FastAPI(title="ML CLUSTER API v5 - Strict Priority & Private Mode")
 
@@ -86,18 +86,21 @@ async def start_training(
             else:
                 train_block.pop("time", None)
 
+        if "sweeper" not in config_data or not isinstance(config_data.get("sweeper"), dict):
+            config_data["sweeper"] = {}
+
         if mode == "private":
             if not worker_name:
                 raise HTTPException(
                     status_code=400, detail="Worker name is required for private mode"
                 )
-            if "sweeper" not in config_data or not isinstance(config_data.get("sweeper"), dict):
-                config_data["sweeper"] = {}
             config_data["sweeper"]["debug"] = worker_name
             config_data["debug"] = worker_name
             config_data["sweeper"]["target_worker_queue"] = worker_name
             target_info = f"private:{worker_name}"
         else:
+            if "priority" not in config_data["sweeper"]:
+                config_data["sweeper"]["priority"] = priority
             target_info = f"public:{priority}"
 
         # Determine optional delayed start (scheduled training)
