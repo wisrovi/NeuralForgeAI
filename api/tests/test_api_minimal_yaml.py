@@ -98,3 +98,55 @@ def test_train_endpoint_rejects_non_yaml():
     response = client.post("/train", files=files)
     assert response.status_code == 400
     assert "File must be a YAML" in response.json()["detail"]
+
+
+def test_train_endpoint_rejects_missing_dataset():
+    """Validates that configs missing 'train.data' are rejected immediately with HTTP 400."""
+    no_data_yaml = b"""model: "yolo26n.pt"
+train:
+  epochs: 5
+"""
+    files = {"config_file": ("config.yaml", io.BytesIO(no_data_yaml), "application/x-yaml")}
+    response = client.post("/train", files=files)
+    assert response.status_code == 400
+    assert "Missing required dataset path" in response.json()["detail"]
+
+
+def test_train_endpoint_rejects_placeholder_dataset():
+    """Validates that template placeholders like <path_to_dataset> are rejected on the fly."""
+    placeholder_yaml = b"""model: "yolo26n.pt"
+train:
+  data: "<path/to/my_dataset.yaml>"
+  epochs: 5
+"""
+    files = {"config_file": ("config.yaml", io.BytesIO(placeholder_yaml), "application/x-yaml")}
+    response = client.post("/train", files=files)
+    assert response.status_code == 400
+    assert "unconfigured placeholder" in response.json()["detail"]
+
+
+def test_train_endpoint_rejects_invalid_file_extension():
+    """Validates that dataset paths pointing to raw image or text files are rejected with HTTP 400."""
+    bad_ext_yaml = b"""model: "yolo26n.pt"
+train:
+  data: "/datasets/project/images.jpg"
+  epochs: 5
+"""
+    files = {"config_file": ("config.yaml", io.BytesIO(bad_ext_yaml), "application/x-yaml")}
+    response = client.post("/train", files=files)
+    assert response.status_code == 400
+    assert "invalid file extension" in response.json()["detail"]
+
+
+def test_train_endpoint_rejects_generic_root_dataset():
+    """Validates that pointing vaguely to '/datasets' without project subpath is rejected."""
+    generic_yaml = b"""model: "yolo26n.pt"
+train:
+  data: "/datasets/data.yaml"
+  epochs: 5
+"""
+    files = {"config_file": ("config.yaml", io.BytesIO(generic_yaml), "application/x-yaml")}
+    response = client.post("/train", files=files)
+    assert response.status_code == 400
+    assert "too generic" in response.json()["detail"]
+
