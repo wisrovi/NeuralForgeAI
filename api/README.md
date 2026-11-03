@@ -54,6 +54,8 @@ To calculate code coverage using `pytest-cov` inside Docker:
 ```
 
 ## Changelog
+- **v1.4.2**: Added server-side Fail-Fast Pre-Flight validation in `POST /train` to reject invalid datasets, placeholders, and bad extensions before enqueuing to Celery.
+- **v1.4.1**: Implemented `startPolling` status streaming for UI client.
 - **v1.2.2**: Added support for simplified, minimal YAML training configurations with automatic sweeper block initialization and vision task style routing.
 - **v1.2.1**: Enhanced private mode routing and Celery manager task dispatch.
 
