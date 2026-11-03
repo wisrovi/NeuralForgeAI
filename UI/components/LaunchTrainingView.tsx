@@ -114,27 +114,14 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
           return false;
         };
 
-        // Validation Rules
-        if (!hasTopLevelKey('model')) {
-          errors.push("Missing top-level key: 'model'");
-        }
-
+        // Validation Rules: Only train.data is strictly mandatory.
+        // model, style/task, and sweeper resolve to smart platform defaults if omitted.
         if (!hasTopLevelKey('train')) {
           errors.push("Missing top-level key: 'train'");
         } else {
-          // Only check nested if parent exists
           if (!hasNestedKey('train', 'data')) {
             errors.push("Missing required nested key: 'train' > 'data'");
           }
-        }
-
-        if (!hasTopLevelKey('sweeper')) {
-          errors.push("Missing top-level key: 'sweeper'");
-        } else {
-           // Only check nested if parent exists
-           if (!hasNestedKey('sweeper', 'study_name')) {
-             errors.push("Missing required nested key: 'sweeper' > 'study_name'");
-           }
         }
 
         if (errors.length > 0) {
@@ -542,43 +529,21 @@ metadata:
     REVOKED: X,
   };
 
-  const yamlTemplate = `debug: wisrovi
-model: "yolov8n.pt"
-type: "yolo"
+  const yamlTemplate = `# NeuralForge Minimal Smart Training Configuration
+model: "yolo11n.pt"
+style: "detect"  # Options: detect, segment, classify, pose, obb (auto-maps fitness metric)
 
-# Data Configuration
+# Data & Hyperparameters
 train:
-  data: /datasets/clasificacion/colorball.v8i.multiclass/
-  epochs: 20
-  # time: 30  # Optional (in hours): overrides epochs and scales Invoker (1.3x) & Redis (2.0x) timeouts
-  imgsz: 640
-  device: 0
+  data: "/datasets/AREPO/protesis/Detector_ProtesisSuperior_261061/data.yaml"
+  epochs: 5
+  # Note: 'batch' is omitted by default -> auto-benchmarked via AutoBatch on host GPU
 
-# Hyperparameter Optimization
+# Sweeper (Optimization)
 sweeper:
-  # study
-  version: 2
-  study_name: "example_classification"
-
-  # optimization
-  n_trials: 5
-  sampler: "TPESampler"
-  search_space:
-    model: ["choice", "yolov8n-cls.pt"]
-    train:
-      imgsz: ["choice", 416, 512, 640]
-      lr0: ["loguniform", 1e-5, 1e-2]
-
-  # evolutionary algorithm
-  algorithm: optuna
-  direction: maximize
-  fitness: "metrics/accuracy_top1"
-  tune: false
-
-metadata:
-  content: "Este es un experimento de xxx de imágenes."
-  author: "William Rodriguez"
-  documentation: "Este modelo fue entrenado con datos del 2026."`;
+  study_name: "study_detect_yolo11n_v1"
+  # Optional: defaults to direction: "maximize", sampler: "TPESampler", algorithm: "optuna"
+  # n_trials: 1 (single trial by default when tune is false)`;
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up pb-10">
