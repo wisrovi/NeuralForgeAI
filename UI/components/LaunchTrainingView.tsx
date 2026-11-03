@@ -489,6 +489,27 @@ metadata:
     }
   };
 
+  const startPolling = (id: string) => {
+    setStudyQueryId(id);
+    const baseUrl = UPLOAD_API_CONFIG.url.replace('/train', '');
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${baseUrl}/study/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStudyDetail(data);
+          setStudyStatus('success');
+          const terminalStates = ['COMPLETED', 'SUCCESS', 'FAILURE', 'REVOKED'];
+          if (terminalStates.includes(data.state) || terminalStates.includes(data.status)) {
+            clearInterval(pollInterval);
+          }
+        }
+      } catch (err) {
+        clearInterval(pollInterval);
+      }
+    }, 3000);
+  };
+
   const checkStudyStatus = async () => {
     if (!studyQueryId.trim()) return;
     setStudyStatus('loading');
