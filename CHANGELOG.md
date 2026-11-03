@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.2] - 2026-11-03
+### Added
+- **Server-Side Fail-Fast Pre-Flight Validation:** Added `validate_training_config_preflight` in `api/main.py` (`POST /train`) to reject invalid configurations on the fly before enqueuing to Celery or creating Optuna studies. Rejects missing dataset paths, unconfigured placeholders (`<path_to_dataset>`), invalid descriptor file extensions, and generic root `/datasets` references with HTTP 400.
+- **Docker Unit Tests:** Extended `tests/test_api_minimal_yaml.py` with 4 new tests validating fail-fast server rejection, passing in isolated Docker container.
+
 ## [1.4.1] - 2026-11-03
 ### Fixed
 - Fixed uncaught ReferenceError `startPolling is not defined` in `LaunchTrainingView.tsx` by implementing the `startPolling` polling mechanism to stream study status and terminal execution states directly in the UI.
