@@ -35,5 +35,27 @@ response = requests.post("http://localhost:8000/train", files=files, data=data)
 print(response.json())
 ```
 
+## Key Technologies and Libraries
+- **Language & Runtime:** Python 3.10
+- **Web Framework:** FastAPI, Starlette, Uvicorn
+- **Distributed Queues:** Celery (Redis broker)
+- **Data Validation & Serializers:** PyYAML, Pydantic, psutil
+- **Testing & Quality:** Pytest, Pytest-cov, HTTPX
+
+## Running Tests
+To run unit tests inside an isolated Docker container:
+```bash
+./run_tests.sh
+```
+
+To calculate code coverage using `pytest-cov` inside Docker:
+```bash
+./coverage.sh
+```
+
+## Changelog
+- **v1.2.2**: Added support for simplified, minimal YAML training configurations with automatic sweeper block initialization and vision task style routing.
+- **v1.2.1**: Enhanced private mode routing and Celery manager task dispatch.
+
 ## Internal Architecture
 The API performs minimal YAML validation and injects routing metadata into a Celery task sent to the `managers` queue. It does not process training directly, ensuring fast response times.
