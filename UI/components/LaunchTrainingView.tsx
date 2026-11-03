@@ -173,6 +173,27 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     }
   };
 
+  const startPolling = (id: string) => {
+    setStudyQueryId(id);
+    const baseUrl = UPLOAD_API_CONFIG.url.replace('/train', '');
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${baseUrl}/study/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStudyDetail(data);
+          setStudyStatus('success');
+          const terminalStates = ['COMPLETED', 'SUCCESS', 'FAILURE', 'REVOKED'];
+          if (terminalStates.includes(data.state) || terminalStates.includes(data.status)) {
+            clearInterval(pollInterval);
+          }
+        }
+      } catch (err) {
+        clearInterval(pollInterval);
+      }
+    }, 3000);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !selectedUserId || !selectedProjectId) return;
@@ -487,27 +508,6 @@ metadata:
       setResponseMsg(error.message || 'Failed to launch advanced smoke test.');
       alert(`Error launching advanced smoke test:\n${error.message || error}`);
     }
-  };
-
-  const startPolling = (id: string) => {
-    setStudyQueryId(id);
-    const baseUrl = UPLOAD_API_CONFIG.url.replace('/train', '');
-    const pollInterval = setInterval(async () => {
-      try {
-        const res = await fetch(`${baseUrl}/study/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setStudyDetail(data);
-          setStudyStatus('success');
-          const terminalStates = ['COMPLETED', 'SUCCESS', 'FAILURE', 'REVOKED'];
-          if (terminalStates.includes(data.state) || terminalStates.includes(data.status)) {
-            clearInterval(pollInterval);
-          }
-        }
-      } catch (err) {
-        clearInterval(pollInterval);
-      }
-    }, 3000);
   };
 
   const checkStudyStatus = async () => {
