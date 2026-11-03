@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.1] - 2026-11-03
+### Fixed
+- Fixed uncaught ReferenceError `startPolling is not defined` in `LaunchTrainingView.tsx` by implementing the `startPolling` polling mechanism to stream study status and terminal execution states directly in the UI.
+
+## [1.4.0] - 2026-11-03
+### Added
+- Added full support for simplified minimal YAML configurations, relaxed frontend client validation in WDarwin Ops UI (`LaunchTrainingView.tsx`), and updated API gateway to gracefully handle omitted sweeper and model blocks.
+
 ## [1.3.0] - 2026-10-29
 ### Added
 - Added visual **Scheduled Start Time** control in `LaunchTrainingView.tsx` allowing developers to delay training execution until a designated wall-clock time (e.g. `18:30` or ISO timestamp) to run overnight without interfering with active work hours.
