@@ -19,7 +19,7 @@ from celery.result import AsyncResult
 # Import Celery app from the local configuration
 from celery_config import app as celery_app
 
-VERSION: str = "v1.2.2"
+VERSION: str = "v1.4.1"
 
 app: FastAPI = FastAPI(title="ML CLUSTER API v5 - Strict Priority & Private Mode")
 
