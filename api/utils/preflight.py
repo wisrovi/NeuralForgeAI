@@ -78,3 +78,72 @@ def validate_training_config_preflight(config_data: dict[str, Any]) -> None:
                 status_code=400,
                 detail=f"Pre-flight validation failed: Model parameter contains unconfigured placeholder '{str_m}'.",
             )
+
+
+def normalize_fitness_and_routing(
+    config_data: dict[str, Any],
+    mode: str,
+    worker_name: str | None,
+    priority: str,
+) -> str:
+    """Normalizes sweeper fitness metric and destination worker routing.
+
+    Args:
+        config_data: Mutable configuration payload dictionary.
+        mode: Dispatch mode ('public' or 'private').
+        worker_name: Optional private worker identifier.
+        priority: Public queue priority ('low', 'medium', 'high').
+
+    Returns:
+        str: Diagnostic routing string (e.g. 'private:192.168.1.68').
+    """
+    sweeper_cfg = config_data.setdefault("sweeper", {})
+    if not isinstance(sweeper_cfg, dict):
+        sweeper_cfg = {}
+        config_data["sweeper"] = sweeper_cfg
+
+    model_str = str(config_data.get("model", "")).lower()
+    style = (
+        config_data.get("style")
+        or config_data.get("task")
+        or ("segment" if "-seg" in model_str
+            else "classify" if "-cls" in model_str
+            else "pose" if "-pose" in model_str
+            else "obb" if "-obb" in model_str
+            else "detect")
+    )
+    fitness_map = {
+        "detect": "metrics/mAP50-95(B)",
+        "segment": "metrics/mAP50-95(M)",
+        "classify": "metrics/accuracy_top1",
+        "pose": "metrics/mAP50-95(P)",
+        "obb": "metrics/mAP50-95(B)",
+    }
+    cur_fit = sweeper_cfg.get("fitness")
+    if not cur_fit or (cur_fit == "metrics/accuracy_top1" and str(style).lower() != "classify"):
+        sweeper_cfg["fitness"] = fitness_map.get(str(style).lower(), "metrics/mAP50-95(B)")
+
+    target_node = (
+        worker_name
+        or sweeper_cfg.get("debug")
+        or config_data.get("debug")
+        or sweeper_cfg.get("target_worker_queue")
+        or config_data.get("target_worker_queue")
+    )
+
+    if mode == "private" or (target_node and mode != "public"):
+        if not target_node:
+            raise HTTPException(status_code=400, detail="Worker name is required for private mode")
+        sweeper_cfg["debug"] = str(target_node)
+        config_data["debug"] = str(target_node)
+        sweeper_cfg["target_worker_queue"] = str(target_node)
+        return f"private:{target_node}"
+
+    if target_node:
+        sweeper_cfg["debug"] = str(target_node)
+        config_data["debug"] = str(target_node)
+        sweeper_cfg["target_worker_queue"] = str(target_node)
+        return f"private:{target_node}"
+
+    sweeper_cfg.setdefault("priority", priority)
+    return f"public:{priority}"
