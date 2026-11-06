@@ -49,16 +49,33 @@ async def start_training(
     if train_block:
         config_data["train"] = train_block
 
-    config_data.setdefault("sweeper", {})
-    if mode == "private":
-        if not worker_name:
+    sweeper_cfg = config_data.setdefault("sweeper", {})
+    if not isinstance(sweeper_cfg, dict):
+        sweeper_cfg = {}
+        config_data["sweeper"] = sweeper_cfg
+
+    target_node = (
+        worker_name
+        or sweeper_cfg.get("debug")
+        or config_data.get("debug")
+        or sweeper_cfg.get("target_worker_queue")
+        or config_data.get("target_worker_queue")
+    )
+
+    if mode == "private" or (target_node and mode != "public"):
+        if not target_node:
             raise HTTPException(status_code=400, detail="Worker name is required for private mode")
-        config_data["sweeper"]["debug"] = worker_name
-        config_data["debug"] = worker_name
-        config_data["sweeper"]["target_worker_queue"] = worker_name
-        target_info = f"private:{worker_name}"
+        sweeper_cfg["debug"] = target_node
+        config_data["debug"] = target_node
+        sweeper_cfg["target_worker_queue"] = target_node
+        target_info = f"private:{target_node}"
+    elif target_node:
+        sweeper_cfg["debug"] = target_node
+        config_data["debug"] = target_node
+        sweeper_cfg["target_worker_queue"] = target_node
+        target_info = f"private:{target_node}"
     else:
-        config_data["sweeper"].setdefault("priority", priority)
+        sweeper_cfg.setdefault("priority", priority)
         target_info = f"public:{priority}"
 
     eta_datetime = parse_scheduled_eta(start_at or config_data.get("start_at"))
