@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.3] - 2026-11-06
+### Added
+- **WPipe Architectural Compliance:** Refactored `api` to 100% compliance with WPipe architecture and QA validation rules.
+- **Dedicated DAG Pipeline:** Created `neuralforge_api_training_pipeline` in `pipelines.py` with `ValidateConfigStep` and `DispatchStudyStep`.
+- **Modular Layout:** Decomposed `main.py` into dedicated SRP modules under `utils/` (`preflight.py`, `time_parser.py`, `redis_service.py`, `celery_service.py`) and `routers/` (`study_router.py`, `admin_router.py`), strictly adhering to the 200-line SRP ceiling.
+- **Typed DTOs:** Created Pydantic DTO models in `dto/api_dto.py` for structured request/response payload handling.
+- **Dependency Pinning:** Strictly pinned all package versions in `requirements.txt` (Rule 15).
+
 ## [1.4.2] - 2026-11-03
 ### Added
 - **Server-Side Fail-Fast Pre-Flight Validation:** Added `validate_training_config_preflight` in `api/main.py` (`POST /train`) to reject invalid configurations on the fly before enqueuing to Celery or creating Optuna studies. Rejects missing dataset paths, unconfigured placeholders (`<path_to_dataset>`), invalid descriptor file extensions, and generic root `/datasets` references with HTTP 400.
