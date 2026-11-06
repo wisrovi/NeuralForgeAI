@@ -37,10 +37,19 @@ print(response.json())
 
 ## Key Technologies and Libraries
 - **Language & Runtime:** Python 3.10
+- **Workflow & Orchestration Engine:** wpipe (DAG execution & state pipeline)
 - **Web Framework:** FastAPI, Starlette, Uvicorn
 - **Distributed Queues:** Celery (Redis broker)
 - **Data Validation & Serializers:** PyYAML, Pydantic, psutil
 - **Testing & Quality:** Pytest, Pytest-cov, HTTPX
+
+## WPipe Architecture
+The API service is organized according to the WPipe modular architecture:
+- `dto/`: Pydantic Data Transfer Objects (`TrainResponseDTO`, `StudyStatusDTO`, `TasksReportDTO`, etc.).
+- `states/`: Discrete WPipe pipeline steps (`ValidateConfigStep`, `DispatchStudyStep`).
+- `pipelines.py`: Orchestrates DAG execution (`neuralforge_api_training_pipeline`).
+- `utils/`: Single-responsibility modules under 200 lines for preflight validation, celery dispatching, and Redis telemetry.
+- `routers/`: Modular FastAPI route handlers.
 
 ## Running Tests
 To run unit tests inside an isolated Docker container:
