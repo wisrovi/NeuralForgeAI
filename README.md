@@ -19,7 +19,7 @@ This repository contains the web user interface dashboard (WDarwin Ops) and the 
 
 ## 🛠️ Technology Stack & Key Libraries
 *   **Frontend UI:** React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons.
-*   **API Gateway:** Python 3.10+, FastAPI, Uvicorn, PyYAML, Pydantic.
+*   **API Gateway:** Python 3.10+, FastAPI, Uvicorn, PyYAML, Pydantic, wpipe (DAG orchestration & state steps).
 *   **Distributed Messaging & State:** Celery, Redis (study metadata persistence with dynamic `2.0x` TTL scaling based on optional `train.time`).
 *   **Testing & Quality Assurance:** Pytest, `pytest-cov`, Docker isolated test runner.
 
