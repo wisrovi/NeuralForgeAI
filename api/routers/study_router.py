@@ -9,6 +9,7 @@ from celery_config import app as celery_app
 from dto.api_dto import StudyStatusDTO, TasksReportDTO, TrainResponseDTO
 from pipelines import neuralforge_api_training_pipeline
 from utils.celery_service import CeleryService
+from utils.preflight import normalize_fitness_and_routing
 from utils.redis_service import RedisService
 from utils.time_parser import normalize_train_time, parse_scheduled_eta
 
@@ -49,34 +50,7 @@ async def start_training(
     if train_block:
         config_data["train"] = train_block
 
-    sweeper_cfg = config_data.setdefault("sweeper", {})
-    if not isinstance(sweeper_cfg, dict):
-        sweeper_cfg = {}
-        config_data["sweeper"] = sweeper_cfg
-
-    target_node = (
-        worker_name
-        or sweeper_cfg.get("debug")
-        or config_data.get("debug")
-        or sweeper_cfg.get("target_worker_queue")
-        or config_data.get("target_worker_queue")
-    )
-
-    if mode == "private" or (target_node and mode != "public"):
-        if not target_node:
-            raise HTTPException(status_code=400, detail="Worker name is required for private mode")
-        sweeper_cfg["debug"] = target_node
-        config_data["debug"] = target_node
-        sweeper_cfg["target_worker_queue"] = target_node
-        target_info = f"private:{target_node}"
-    elif target_node:
-        sweeper_cfg["debug"] = target_node
-        config_data["debug"] = target_node
-        sweeper_cfg["target_worker_queue"] = target_node
-        target_info = f"private:{target_node}"
-    else:
-        sweeper_cfg.setdefault("priority", priority)
-        target_info = f"public:{priority}"
+    target_info = normalize_fitness_and_routing(config_data, mode, worker_name, priority)
 
     eta_datetime = parse_scheduled_eta(start_at or config_data.get("start_at"))
     if eta_datetime:
@@ -144,6 +118,14 @@ async def get_study_details(study_id: str) -> dict[str, Any]:
     meta = redis_svc.get_study_metadata(study_id)
     response = {"study_id": study_id, "state": str(res.state), "ready": res.ready()}
     response.update(meta)
+    if res.ready() and isinstance(res.result, dict):
+        response["result"] = res.result
+        best_val = res.result.get("best_value")
+        if best_val is not None:
+            res_data = response.setdefault("results_data", {})
+            if isinstance(res_data, dict) and res_data.get("accuracy", 0) == 0:
+                res_data["accuracy"] = float(best_val)
+                res_data["fitness"] = float(best_val)
     return response
 
 
