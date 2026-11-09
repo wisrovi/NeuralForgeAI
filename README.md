@@ -89,6 +89,13 @@ If you use this project in academic research, you are required to cite this repo
 
 
 ## Changelog
+- **v1.4.4**: 
+  - **Dual-Audience W-Darwin Ops UI:** Integrated intuitive dual-mode interfaces accommodating both non-expert end users and expert AI researchers:
+    - `WorkerFleetSelector`: Visual GPU worker cards with friendly station names ("Estación Titán", "Nodo CIMA 65") and technical hardware specifications.
+    - `PipelineProgressViewer`: 5-phase visual WPipe DAG progress lifecycle with plain language explanations.
+    - `StudyResultsViewer`: Executive scorecards (0-100%) with automated natural language diagnostics and one-click markdown report download, alongside deep technical metric tabs.
+    - `SmartConfigBuilder`: 3-step Guided Wizard for training presets plus raw YAML drag-and-drop studio.
+  - **Transient Retry Error Filtering:** Cleaned obsolete retry errors in `redis_service.py` when studies complete successfully.
 - **v1.4.1**: Fixed uncaught ReferenceError `startPolling` in `LaunchTrainingView.tsx` with dedicated status polling mechanism.
 - **v1.4.0**: Added full support for simplified minimal YAML configurations, relaxed frontend client validation in WDarwin Ops UI (`LaunchTrainingView.tsx`), and updated API gateway to gracefully handle omitted sweeper and model blocks.
 - **v1.3.0**: Added visual Scheduled Start Time (`start_at`) control in `LaunchTrainingView.tsx` allowing developers to delay execution until specific wall-clock hours without conflicting with daytime work.
