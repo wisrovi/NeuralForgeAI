@@ -1,6 +1,10 @@
 """Study submission and monitoring router for NeuralForge API."""
 
+import json
+import os
 from typing import Any, Optional
+import urllib.parse
+import urllib.request
 import yaml
 from celery.result import AsyncResult
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -16,6 +20,57 @@ from utils.time_parser import normalize_train_time, parse_scheduled_eta
 router = APIRouter()
 celery_svc = CeleryService(celery_app)
 redis_svc = RedisService(celery_app.conf.broker_url)
+
+
+def get_mlflow_study_info(study_name: str, base_url: str = "http://192.168.10.252:23435") -> dict[str, Any]:
+    """Resolves experiment ID, latest run ID, and real metrics from MLflow Tracking server."""
+    info: dict[str, Any] = {
+        "experiment_id": None,
+        "run_id": None,
+        "url": f"{base_url}/",
+        "metrics": {},
+    }
+    if not study_name:
+        return info
+
+    try:
+        encoded_name = urllib.parse.quote(study_name)
+        exp_req = urllib.request.Request(
+            f"{base_url}/api/2.0/mlflow/experiments/get-by-name?experiment_name={encoded_name}"
+        )
+        with urllib.request.urlopen(exp_req, timeout=1.5) as resp:
+            exp_data = json.loads(resp.read().decode())
+            exp_id = exp_data.get("experiment", {}).get("experiment_id")
+            if exp_id:
+                info["experiment_id"] = exp_id
+                info["url"] = f"{base_url}/#/experiments/{exp_id}"
+
+                runs_payload = json.dumps({
+                    "experiment_ids": [exp_id],
+                    "max_results": 1,
+                    "order_by": ["start_time DESC"],
+                }).encode("utf-8")
+                runs_req = urllib.request.Request(
+                    f"{base_url}/api/2.0/mlflow/runs/search",
+                    data=runs_payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                with urllib.request.urlopen(runs_req, timeout=1.5) as r2:
+                    runs_data = json.loads(r2.read().decode())
+                    runs_list = runs_data.get("runs", [])
+                    if runs_list:
+                        run = runs_list[0]
+                        run_id = run.get("info", {}).get("run_id")
+                        if run_id:
+                            info["run_id"] = run_id
+                            info["url"] = f"{base_url}/#/experiments/{exp_id}/runs/{run_id}"
+
+                            raw_metrics = run.get("data", {}).get("metrics", [])
+                            metrics_map = {m["key"]: m["value"] for m in raw_metrics if "key" in m and "value" in m}
+                            info["metrics"] = metrics_map
+    except Exception as exc:
+        print(f"[MLflow Info] Could not resolve MLflow link for {study_name}: {exc}")
+    return info
 
 
 @router.post("/train", response_model=TrainResponseDTO)
@@ -123,9 +178,34 @@ async def get_study_details(study_id: str) -> dict[str, Any]:
         best_val = res.result.get("best_value")
         if best_val is not None:
             res_data = response.setdefault("results_data", {})
-            if isinstance(res_data, dict) and res_data.get("accuracy", 0) == 0:
-                res_data["accuracy"] = float(best_val)
-                res_data["fitness"] = float(best_val)
+            if isinstance(res_data, dict):
+                best_float = float(best_val)
+                curr_acc = float(res_data.get("accuracy", 0))
+                final_acc = max(best_float, curr_acc)
+                res_data["accuracy"] = final_acc
+                res_data["fitness"] = final_acc
+                res_data["best_value"] = best_float
+
+    study_name = response.get("study_name") or response.get("config", {}).get("sweeper", {}).get("study_name")
+    if study_name:
+        mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://192.168.10.252:23435")
+        mlflow_info = get_mlflow_study_info(study_name, mlflow_uri)
+        if mlflow_info.get("url"):
+            response["mlflow_url"] = mlflow_info["url"]
+            response["mlflow_experiment_id"] = mlflow_info.get("experiment_id")
+            response["mlflow_run_id"] = mlflow_info.get("run_id")
+            res_data = response.setdefault("results_data", {})
+            if isinstance(res_data, dict):
+                res_data["mlflow_url"] = mlflow_info["url"]
+                res_data["mlflow_experiment_id"] = mlflow_info.get("experiment_id")
+                res_data["mlflow_run_id"] = mlflow_info.get("run_id")
+            if mlflow_info.get("metrics"):
+                response["real_metrics"] = mlflow_info["metrics"]
+                if isinstance(res_data, dict):
+                    res_data["real_metrics"] = mlflow_info["metrics"]
+                    for k, v in mlflow_info["metrics"].items():
+                        res_data[k] = v
+
     if str(res.state) == "SUCCESS" or response.get("state") == "COMPLETED" or response.get("results_data"):
         response.pop("error_data", None)
     return response
