@@ -7,7 +7,7 @@ services:
       args:
         - VITE_API_HOST=${API_HOST}
         - VITE_CONTROL_HOST=${CONTROL_HOST}
-    image: wisrovi/train_service:w_darwin_ops_frontend_v1.0.0
+    image: wisrovi/train_service:w_darwin_ops_frontend_v1.1.0
     ports:
       - "23432:4173"
     environment:
