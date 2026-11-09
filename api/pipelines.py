@@ -5,7 +5,7 @@ from wpipe import Pipeline
 from states.dispatch_study_step import dispatch_study_step
 from states.validate_config_step import validate_config_step
 
-VERSION: str = "v1.4.5"
+VERSION: str = "v1.5.0"
 
 
 def neuralforge_api_training_pipeline() -> Pipeline:
