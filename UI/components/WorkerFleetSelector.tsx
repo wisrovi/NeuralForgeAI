@@ -41,6 +41,15 @@ export const WorkerFleetSelector: React.FC<WorkerFleetSelectorProps> = ({
   const [nodes, setNodes] = useState<WorkerNodeInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [expertMode, setExpertMode] = useState<boolean>(false);
+  const [purgedIps, setPurgedIps] = useState<Record<string, boolean>>({});
+
+  const handlePurgeVram = (ip: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPurgedIps(prev => ({ ...prev, [ip]: true }));
+    setTimeout(() => {
+      setPurgedIps(prev => ({ ...prev, [ip]: false }));
+    }, 2000);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -199,6 +208,18 @@ export const WorkerFleetSelector: React.FC<WorkerFleetSelectorProps> = ({
                           Recomendado
                         </span>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => handlePurgeVram(node.ip, e)}
+                        title="Limpiar cachés de PyTorch y VRAM en este nodo"
+                        className="ml-auto text-[10px] text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-1"
+                      >
+                        {purgedIps[node.ip] ? (
+                          <span className="text-emerald-500 font-bold">¡VRAM OK!</span>
+                        ) : (
+                          <span>Optimizar</span>
+                        )}
+                      </button>
                     </>
                   )}
                 </div>
