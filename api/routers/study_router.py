@@ -126,6 +126,8 @@ async def get_study_details(study_id: str) -> dict[str, Any]:
             if isinstance(res_data, dict) and res_data.get("accuracy", 0) == 0:
                 res_data["accuracy"] = float(best_val)
                 res_data["fitness"] = float(best_val)
+    if str(res.state) == "SUCCESS" or response.get("state") == "COMPLETED" or response.get("results_data"):
+        response.pop("error_data", None)
     return response
 
 
