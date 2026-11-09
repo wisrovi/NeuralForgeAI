@@ -89,6 +89,12 @@ If you use this project in academic research, you are required to cite this repo
 
 
 ## Changelog
+- **v1.5.0**:
+  - **Live Training Telemetry & Loss Curves:** Added `LiveTrainingTelemetry` component for real-time epoch tracking and zero-dependency SVG sparkline charts of box and classification loss convergence.
+  - **Visual Explainability (XAI) Suite:** Integrated `VisualXaiStudio` featuring an interactive Before/After split slider for Grad-CAM heatmaps with natural language focal diagnostics.
+  - **Production Model Export Studio:** Integrated `ModelExportDeploymentStudio` supporting 1-click ONNX, TensorRT, OpenVINO, and CoreML packaging alongside edge device latency benchmarks.
+  - **Pre-Flight Dataset Health Inspector:** Integrated `DatasetPreflightHealth` to prevent GPU resource allocation on misconfigured or empty CIFS dataset folders.
+  - **Worker VRAM Optimization:** Added GPU memory cache flush controls in `WorkerFleetSelector`.
 - **v1.4.5**: Suppressed lingering retry errors unconditionally in `study_router.py` whenever studies complete successfully with valid results or SUCCESS status.
 - **v1.4.4**: 
   - **Dual-Audience W-Darwin Ops UI:** Integrated intuitive dual-mode interfaces accommodating both non-expert end users and expert AI researchers:
