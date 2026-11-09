@@ -16,3 +16,7 @@ env/
 graphify-out/
 .coverage
 .pytest_cache/
+*.log
+api/logs/
+dist/
+node_modules/
