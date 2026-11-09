@@ -18,12 +18,12 @@ if (fs.existsSync(assetsDir)) {
     const filePath = path.join(assetsDir, jsFile);
     let content = fs.readFileSync(filePath, 'utf8');
 
-    // Regex to match the minified cf environment variables object
-    const targetRegex = /cf\s*=\s*\{\s*BASE_URL\s*:\s*"\/",\s*DEV\s*:\s*!1,\s*MODE\s*:\s*"production",\s*PROD\s*:\s*!0,\s*SSR\s*:\s*!1\s*\}/;
-    const replacement = `cf={BASE_URL:"/",DEV:!1,MODE:"production",PROD:!0,SSR:!1,VITE_API_HOST:${apiHostVal},VITE_CONTROL_HOST:${controlHostVal}}`;
-    
-    if (targetRegex.test(content)) {
-      content = content.replace(targetRegex, replacement);
+    // Regex to match the minified environment variables object (any variable name e.g. cf, xf)
+    const match = content.match(/([a-zA-Z0-9_$]+)\s*=\s*\{\s*BASE_URL\s*:\s*"\/",\s*DEV\s*:\s*!1,\s*MODE\s*:\s*"production",\s*PROD\s*:\s*!0,\s*SSR\s*:\s*!1\s*\}/);
+    if (match) {
+      const varName = match[1];
+      const replacement = `${varName}={BASE_URL:"/",DEV:!1,MODE:"production",PROD:!0,SSR:!1,VITE_API_HOST:${apiHostVal},VITE_CONTROL_HOST:${controlHostVal}}`;
+      content = content.replace(match[0], replacement);
       fs.writeFileSync(filePath, content, 'utf8');
       console.log(`Successfully patched ${jsFile} at runtime with CONTROL_HOST=${controlHost} and VITE_API_HOST=${apiHost}`);
     } else {
