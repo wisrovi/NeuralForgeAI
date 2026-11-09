@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.4] - 2026-11-09
+### Fixed
+- **Transient Retry Error Filtering:** In `redis_service.py`, discarded historical retry error keys when a study reaches `COMPLETED` state with valid `results_data`, preventing obsolete initialization errors from obscuring successful training outcomes in the UI.
+
 ## [1.4.3] - 2026-11-06
 ### Added
 - **WPipe Architectural Compliance:** Refactored `api` to 100% compliance with WPipe architecture and QA validation rules.
