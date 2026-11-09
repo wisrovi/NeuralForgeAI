@@ -37,7 +37,9 @@ const getEnv = (key: string, fallback: string) => {
   }
 };
 
-const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+const defaultClusterHost = '192.168.10.252';
+const rawHost = typeof window !== 'undefined' ? window.location.hostname : defaultClusterHost;
+const currentHost = (rawHost === 'localhost' || rawHost === '127.0.0.1') ? defaultClusterHost : rawHost;
 const API_HOST = getEnv('VITE_API_HOST', currentHost);
 const CONTROL_HOST = getEnv('VITE_CONTROL_HOST', currentHost);
 
