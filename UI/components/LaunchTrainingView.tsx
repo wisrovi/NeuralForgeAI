@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame, Calendar } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -9,6 +9,7 @@ import StudyResultsViewer from './StudyResultsViewer';
 import SmartConfigBuilder from './SmartConfigBuilder';
 import LiveTrainingTelemetry from './LiveTrainingTelemetry';
 import DatasetPreflightHealth from './DatasetPreflightHealth';
+import YamlFileInspector, { inspectYamlContent, YamlParsedData } from './YamlFileInspector';
 
 interface LaunchTrainingViewProps {
   users: UserProfile[];
@@ -24,6 +25,10 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [workerName, setWorkerName] = useState('');
   const [startAt, setStartAt] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [fileContent, setFileContent] = useState<string>('');
+  const [parsedDataPath, setParsedDataPath] = useState<string>('');
+  const [parsedYaml, setParsedYaml] = useState<YamlParsedData>({});
+  const [isYamlValid, setIsYamlValid] = useState<boolean>(true);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [responseMsg, setResponseMsg] = useState('');
@@ -37,6 +42,33 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const studyCheckerRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper to format Date to YYYY-MM-DDTHH:mm for datetime-local input
+  const formatDatetimeLocal = (d: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  // Pre-select first user and project as sensible defaults if unselected
+  useEffect(() => {
+    if (!selectedUserId && users && users.length > 0) {
+      setSelectedUserId(users[0].id);
+    }
+  }, [users, selectedUserId]);
+
+  useEffect(() => {
+    if (!selectedProjectId && projects && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  const minDatetime = formatDatetimeLocal(new Date());
+
+  const handleQuickSchedule = (hoursAhead: number) => {
+    const target = new Date(Date.now() + hoursAhead * 3600 * 1000);
+    setStartAt(formatDatetimeLocal(target));
+  };
 
   const validateFileContent = (fileToValidate: File): Promise<string[] | null> => {
     return new Promise((resolve) => {
@@ -146,14 +178,53 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     setUploadStatus('idle');
     setResponseMsg('');
 
-    const errors = await validateFileContent(selectedFile);
-    
-    if (errors && errors.length > 0) {
-      setValidationErrors(errors);
-      setFile(null);
-    } else {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = (e.target?.result as string) || '';
       setFile(selectedFile);
-    }
+      setFileContent(content);
+
+      const diag = inspectYamlContent(content);
+      setIsYamlValid(diag.isValid);
+      setValidationErrors(diag.errors);
+      setParsedDataPath(diag.parsed.dataPath || '');
+      setParsedYaml(diag.parsed);
+
+      // Smart match author to existing users
+      const authorMatch = content.match(/author:\s*["']?([^"'\n\r#]+)["']?/i);
+      if (authorMatch && authorMatch[1] && users && users.length > 0) {
+        const authorClean = authorMatch[1].trim().toLowerCase();
+        const matchedUser = users.find(u => 
+          u.name.toLowerCase().includes(authorClean) || authorClean.includes(u.name.toLowerCase())
+        );
+        if (matchedUser) {
+          setSelectedUserId(matchedUser.id);
+        }
+      }
+
+      // Smart match project from data path if present
+      if (diag.parsed.dataPath && projects && projects.length > 0) {
+        const pathParts = diag.parsed.dataPath.split('/').filter(Boolean);
+        if (pathParts.length >= 2 && pathParts[0] === 'datasets') {
+          const projectFolder = pathParts[1].toLowerCase();
+          const matchedProj = projects.find(p => 
+            p.name.toLowerCase() === projectFolder || 
+            p.name.toLowerCase().includes(projectFolder) ||
+            projectFolder.includes(p.name.toLowerCase())
+          );
+          if (matchedProj) {
+            setSelectedProjectId(matchedProj.id);
+          }
+        }
+      }
+    };
+    reader.onerror = () => {
+      setFile(selectedFile);
+      setFileContent('');
+      setIsYamlValid(false);
+      setValidationErrors(["Error al leer el contenido del archivo en el navegador."]);
+    };
+    reader.readAsText(selectedFile);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -671,30 +742,84 @@ sweeper:
                 </div>
               )}
 
-              {/* Scheduled Start Time (start_at) */}
+              {/* Scheduled Start Time (start_at) with Calendar Picker */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
-                  <Clock size={16} className="text-blue-500" />
-                  Scheduled Start Time (Optional)
-                </label>
-                <div className="relative">
-                  <input 
-                    type="text"
-                    value={startAt}
-                    onChange={(e) => setStartAt(e.target.value)}
-                    placeholder="e.g. 18:30 or 2026-10-29T18:30:00"
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-8"
-                  />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                    <Calendar size={16} className="text-blue-500" />
+                    Scheduled Start Time (Optional)
+                  </label>
                   {startAt && (
                     <button
                       type="button"
                       onClick={() => setStartAt('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                      title="Clear schedule"
+                      className="text-xs text-red-500 hover:underline flex items-center gap-1"
                     >
-                      <X size={14} />
+                      <X size={12} />
+                      Quitar fecha
                     </button>
                   )}
+                </div>
+                <div className="relative">
+                  <input 
+                    ref={dateInputRef}
+                    type="datetime-local"
+                    value={startAt}
+                    min={minDatetime}
+                    onChange={(e) => setStartAt(e.target.value)}
+                    onClick={() => {
+                      try {
+                        dateInputRef.current?.showPicker();
+                      } catch {
+                        // ignore if showPicker not supported
+                      }
+                    }}
+                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                  />
+                </div>
+                {/* Quick Shortcuts */}
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap text-[11px]">
+                  <span className="text-gray-400">Atajos:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickSchedule(1)}
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors"
+                  >
+                    +1 Hora
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickSchedule(3)}
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors"
+                  >
+                    +3 Horas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tonight = new Date();
+                      tonight.setHours(22, 0, 0, 0);
+                      if (tonight.getTime() <= Date.now()) {
+                        tonight.setDate(tonight.getDate() + 1);
+                      }
+                      setStartAt(formatDatetimeLocal(tonight));
+                    }}
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors"
+                  >
+                    Esta noche (22:00)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(8, 0, 0, 0);
+                      setStartAt(formatDatetimeLocal(tomorrow));
+                    }}
+                    className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition-colors"
+                  >
+                    Mañana (08:00)
+                  </button>
                 </div>
               </div>
             </div>
@@ -710,77 +835,46 @@ sweeper:
             )}
 
             {/* Smart Config Studio & File Selector */}
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-2">
+            <div className="mb-6 space-y-4">
+              <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  Configuración del Entrenamiento
+                  Configuración del Entrenamiento (YAML)
                 </label>
-                {file && (
-                  <button 
-                    type="button"
-                    onClick={() => setFile(null)}
-                    className="text-xs text-red-500 hover:underline flex items-center gap-1"
-                  >
-                    <X size={12} />
-                    Cambiar archivo seleccionado
-                  </button>
-                )}
               </div>
 
-              {file ? (
+              {file && fileContent ? (
                 <>
-                {/* Active Selected File Banner */}
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-center justify-between animate-fade-in shadow-sm min-h-[90px]">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-900 shadow-sm">
-                      <File size={24} />
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-gray-900 dark:text-white truncate max-w-[200px] md:max-w-md">{file.name}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs font-mono text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700">
-                          {(file.size / 1024).toFixed(2)} KB
-                        </span>
-                        <span className="text-xs text-green-600 dark:text-green-400 font-bold flex items-center gap-1">
-                          <CheckCircle size={12} className="text-green-500" /> Listo para Desplegar
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setFile(null)}
-                    className="p-2.5 hover:bg-white dark:hover:bg-gray-800 rounded-xl text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
-                    title="Remove file"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {/* Pre-Flight Dataset Health Inspector */}
-                <div className="mt-4">
-                  <DatasetPreflightHealth
-                    dataPath={file.name.toLowerCase().includes('pastillas') ? '/datasets/EYESCLOUD3D/Pastillas' : '/datasets/AREPO/protesis/Detector_ProtesisSuperior_261061/data.yaml'}
-                    modelName="yolo11n.pt"
+                  <YamlFileInspector
+                    fileName={file.name}
+                    fileSize={file.size}
+                    rawContent={fileContent}
+                    onClearFile={() => {
+                      setFile(null);
+                      setFileContent('');
+                      setParsedDataPath('');
+                      setParsedYaml({});
+                      setValidationErrors([]);
+                      setIsYamlValid(true);
+                    }}
                   />
-                </div>
-              </>
+
+                  {/* Pre-Flight Dataset Health Inspector using the parsed data path */}
+                  {isYamlValid && parsedDataPath && (
+                    <div className="mt-4">
+                      <DatasetPreflightHealth
+                        dataPath={parsedDataPath}
+                        modelName={parsedYaml.model || 'yolo11n.pt'}
+                        batchSize={parsedYaml.batch || 16}
+                        epochs={parsedYaml.epochs || 5}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <SmartConfigBuilder
                   onConfigFileGenerated={(f) => processFile(f)}
                   selectedWorkerIp={workerName || '192.168.1.68'}
                 />
-              )}
-
-              {validationErrors.length > 0 && (
-                <div className="text-sm text-red-500 dark:text-red-400 mt-4 max-w-full text-left bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/50">
-                  <p className="font-semibold mb-1 border-b border-red-200 dark:border-red-800/50 pb-1">Errores de Validación:</p>
-                  <ul className="list-disc pl-4 space-y-1 text-xs">
-                    {validationErrors.map((err, i) => (
-                      <li key={i}>{err}</li>
-                    ))}
-                  </ul>
-                </div>
               )}
             </div>
 
@@ -805,13 +899,48 @@ sweeper:
               </div>
             )}
 
+            {/* Validation & Requirements Callout when Launch is Disabled */}
+            {(!file || !isYamlValid || !selectedUserId || !selectedProjectId) && uploadStatus !== 'uploading' && (
+              <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
+                <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-500" />
+                <div className="flex-1">
+                  <span className="font-semibold block mb-1">Para habilitar el botón "Launch Training Job", completa los siguientes requisitos:</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] mt-2">
+                    <div className={`flex items-center gap-1.5 ${selectedUserId ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400 font-medium'}`}>
+                      {selectedUserId ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-amber-500" />}
+                      <span>Desarrollador (Initiating User): {selectedUserId ? '✓ Asignado' : 'Falta seleccionar'}</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${selectedProjectId ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400 font-medium'}`}>
+                      {selectedProjectId ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-amber-500" />}
+                      <span>Proyecto (Target Project): {selectedProjectId ? '✓ Asignado' : 'Falta seleccionar'}</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${file ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400 font-medium'}`}>
+                      {file ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-amber-500" />}
+                      <span>Archivo YAML: {file ? '✓ Cargado' : 'Falta cargar'}</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${isYamlValid ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400 font-medium'}`}>
+                      {isYamlValid ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-red-500" />}
+                      <span>Estructura YAML: {isYamlValid ? '✓ Válida' : 'Con errores'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!file || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'}
+              disabled={!file || !isYamlValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'}
+              title={
+                !file ? 'Debes seleccionar o subir un archivo YAML' :
+                !isYamlValid ? 'El archivo YAML contiene errores estructurales' :
+                !selectedUserId ? 'Debes seleccionar el Desarrollador (Initiating User)' :
+                !selectedProjectId ? 'Debes seleccionar el Proyecto de destino (Target Project)' :
+                'Listo para desplegar el entrenamiento en el cluster'
+              }
               className={`
                 w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2.5 transition-all duration-200
-                ${!file || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'
+                ${!file || !isYamlValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:-translate-y-0.5'
                 }
@@ -940,6 +1069,9 @@ sweeper:
               totalEpochs={studyDetail.config?.train?.epochs || 5}
               etaSeconds={studyDetail.eta || 45}
               isCompleted={studyDetail.state === 'COMPLETED' || !!studyDetail.results_data}
+              fitnessValue={studyDetail.result?.best_value ?? studyDetail.results_data?.best_value ?? studyDetail.results_data?.fitness ?? studyDetail.results_data?.accuracy ?? 0.5122}
+              mlflowUrl={studyDetail.mlflow_url || studyDetail.results_data?.mlflow_url}
+              realMetrics={studyDetail.real_metrics || studyDetail.results_data?.real_metrics}
             />
 
             {/* Results Scorecard & Dual Audience Viewer */}
@@ -947,6 +1079,7 @@ sweeper:
               studyId={studyDetail.study_id}
               studyName={studyDetail.study_name}
               resultsData={studyDetail.results_data}
+              result={studyDetail.result}
               config={studyDetail.config}
               errorData={studyDetail.error_data}
             />
