@@ -3,6 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.0] - 2026-11-09
+### Added
+- **Live Training Telemetry & Loss Curves (`LiveTrainingTelemetry.tsx`):** Real-time epoch tracking with native SVG loss sparklines (`box_loss`, `cls_loss`) and convergence accuracy metrics (`mAP50`), plus active worker GPU temperature and dynamic ETA predictor.
+- **Visual Explainability (XAI) Suite (`VisualXaiStudio.tsx`):** Interactive Before/After split slider comparing original input images against `ImageECamYOLO` Grad-CAM heatmaps with natural language focal diagnostics and outlier failure analysis.
+- **One-Click Model Export & Deployment Studio (`ModelExportDeploymentStudio.tsx`):** Production export studio supporting ONNX, TensorRT, OpenVINO, CoreML, and TorchScript formats, along with edge latency benchmarks (Jetson, RTX, Intel CPU) and 1-click technical deployment specifications.
+- **Pre-Flight Dataset Health Inspector (`DatasetPreflightHealth.tsx`):** Automated pre-submission verification of dataset descriptor files, folder existence, class sample count, and CIFS mount paths.
+- **GPU VRAM Optimizer (`WorkerFleetSelector.tsx`):** Interactive action on GPU worker cards to trigger PyTorch cache flushing and VRAM optimization.
+
 ## [1.4.5] - 2026-11-09
 ### Fixed
 - **API Error Sanitization on Success:** In `study_router.py`, unconditionally suppress `error_data` from API responses whenever the study has completed (`res.state == "SUCCESS"`, `state == "COMPLETED"`, or `results_data` present), ensuring retry logs do not pollute study status.
