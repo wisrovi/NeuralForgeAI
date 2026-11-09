@@ -89,6 +89,7 @@ If you use this project in academic research, you are required to cite this repo
 
 
 ## Changelog
+- **v1.4.5**: Suppressed lingering retry errors unconditionally in `study_router.py` whenever studies complete successfully with valid results or SUCCESS status.
 - **v1.4.4**: 
   - **Dual-Audience W-Darwin Ops UI:** Integrated intuitive dual-mode interfaces accommodating both non-expert end users and expert AI researchers:
     - `WorkerFleetSelector`: Visual GPU worker cards with friendly station names ("Estación Titán", "Nodo CIMA 65") and technical hardware specifications.
