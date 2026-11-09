@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.5] - 2026-11-09
+### Fixed
+- **API Error Sanitization on Success:** In `study_router.py`, unconditionally suppress `error_data` from API responses whenever the study has completed (`res.state == "SUCCESS"`, `state == "COMPLETED"`, or `results_data` present), ensuring retry logs do not pollute study status.
+
 ## [1.4.4] - 2026-11-09
 ### Fixed
 - **Transient Retry Error Filtering:** In `redis_service.py`, discarded historical retry error keys when a study reaches `COMPLETED` state with valid `results_data`, preventing obsolete initialization errors from obscuring successful training outcomes in the UI.
