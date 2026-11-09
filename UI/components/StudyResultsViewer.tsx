@@ -13,8 +13,12 @@ import {
   ChevronUp,
   Sparkles,
   Zap,
-  BarChart2
+  BarChart2,
+  Eye,
+  Rocket
 } from 'lucide-react';
+import VisualXaiStudio from './VisualXaiStudio';
+import ModelExportDeploymentStudio from './ModelExportDeploymentStudio';
 
 interface StudyResultsViewerProps {
   studyId: string;
@@ -34,7 +38,7 @@ export const StudyResultsViewer: React.FC<StudyResultsViewerProps> = ({
   mlflowBaseUrl = 'http://192.168.10.252:23435'
 }) => {
   const [showRawJson, setShowRawJson] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'executive' | 'technical'>('executive');
+  const [activeTab, setActiveTab] = useState<'executive' | 'technical' | 'xai' | 'export'>('executive');
 
   const rawAccuracy = resultsData?.accuracy ?? resultsData?.fitness ?? 0;
   const accuracyPercent = Math.round(Number(rawAccuracy) * 100);
@@ -125,6 +129,30 @@ Detalles de la Configuración:
             }`}
           >
             Vista Técnica (Expertos)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('xai')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${
+              activeTab === 'xai'
+                ? 'bg-white dark:bg-gray-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+            }`}
+          >
+            <Eye size={12} />
+            Explicabilidad (XAI)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('export')}
+            className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1 ${
+              activeTab === 'export'
+                ? 'bg-white dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+            }`}
+          >
+            <Rocket size={12} />
+            Exportar & Desplegar
           </button>
         </div>
       </div>
@@ -272,6 +300,29 @@ Detalles de la Configuración:
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* XAI STUDIO (Visual Explainability & Grad-CAM) */}
+      {activeTab === 'xai' && (
+        <div className="animate-fade-in">
+          <VisualXaiStudio
+            studyId={studyId}
+            studyName={studyName}
+            resultsData={resultsData}
+          />
+        </div>
+      )}
+
+      {/* ONE-CLICK DEPLOYMENT & EXPORT STUDIO */}
+      {activeTab === 'export' && (
+        <div className="animate-fade-in">
+          <ModelExportDeploymentStudio
+            studyId={studyId}
+            studyName={studyName}
+            modelArchitecture={config?.model || 'yolo11n.pt'}
+            accuracyScore={rawAccuracy}
+          />
         </div>
       )}
     </div>
