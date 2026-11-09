@@ -82,6 +82,9 @@ class RedisService:
                 if raw:
                     meta["error_data"] = json.loads(raw)
 
+            if meta.get("results_data") or meta.get("state") == "COMPLETED":
+                meta.pop("error_data", None)
+
             config_raw = client.get(f"study:{study_id}:config")
             if config_raw:
                 meta["config"] = json.loads(config_raw)
