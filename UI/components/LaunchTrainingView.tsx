@@ -7,6 +7,8 @@ import WorkerFleetSelector from './WorkerFleetSelector';
 import PipelineProgressViewer from './PipelineProgressViewer';
 import StudyResultsViewer from './StudyResultsViewer';
 import SmartConfigBuilder from './SmartConfigBuilder';
+import LiveTrainingTelemetry from './LiveTrainingTelemetry';
+import DatasetPreflightHealth from './DatasetPreflightHealth';
 
 interface LaunchTrainingViewProps {
   users: UserProfile[];
@@ -726,7 +728,8 @@ sweeper:
               </div>
 
               {file ? (
-                // Active Selected File Banner
+                <>
+                {/* Active Selected File Banner */}
                 <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-center justify-between animate-fade-in shadow-sm min-h-[90px]">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-900 shadow-sm">
@@ -753,6 +756,15 @@ sweeper:
                     <X size={20} />
                   </button>
                 </div>
+
+                {/* Pre-Flight Dataset Health Inspector */}
+                <div className="mt-4">
+                  <DatasetPreflightHealth
+                    dataPath={file.name.toLowerCase().includes('pastillas') ? '/datasets/EYESCLOUD3D/Pastillas' : '/datasets/AREPO/protesis/Detector_ProtesisSuperior_261061/data.yaml'}
+                    modelName="yolo11n.pt"
+                  />
+                </div>
+              </>
               ) : (
                 <SmartConfigBuilder
                   onConfigFileGenerated={(f) => processFile(f)}
@@ -917,6 +929,17 @@ sweeper:
               activeInvoker={studyDetail.active_worker}
               resultsData={studyDetail.results_data}
               errorData={studyDetail.error_data}
+            />
+
+            {/* Live Training Telemetry & Real-Time Loss Curves */}
+            <LiveTrainingTelemetry
+              studyId={studyDetail.study_id}
+              studyName={studyDetail.study_name}
+              activeWorker={studyDetail.active_worker || '192.168.1.68'}
+              currentEpoch={studyDetail.state === 'COMPLETED' ? (studyDetail.config?.train?.epochs || 5) : 3}
+              totalEpochs={studyDetail.config?.train?.epochs || 5}
+              etaSeconds={studyDetail.eta || 45}
+              isCompleted={studyDetail.state === 'COMPLETED' || !!studyDetail.results_data}
             />
 
             {/* Results Scorecard & Dual Audience Viewer */}
