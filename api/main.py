@@ -11,7 +11,7 @@ from routers.admin_router import router as admin_router
 from routers.study_router import router as study_router
 from utils.preflight import validate_training_config_preflight
 
-VERSION: str = "v1.4.3"
+VERSION: str = "v1.4.4"
 
 app: FastAPI = FastAPI(title="ML CLUSTER API v5 - Strict Priority & Private Mode")
 
