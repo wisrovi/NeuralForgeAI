@@ -3,6 +3,10 @@ import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, Upl
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
+import WorkerFleetSelector from './WorkerFleetSelector';
+import PipelineProgressViewer from './PipelineProgressViewer';
+import StudyResultsViewer from './StudyResultsViewer';
+import SmartConfigBuilder from './SmartConfigBuilder';
 
 interface LaunchTrainingViewProps {
   users: UserProfile[];
@@ -631,7 +635,7 @@ sweeper:
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               {/* Mode Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -642,8 +646,8 @@ sweeper:
                   onChange={(e) => setMode(e.target.value as any)}
                   className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="public">Public (Shared Queue)</option>
-                  <option value="private">Private (Specific Worker)</option>
+                  <option value="public">Public (Shared Cluster Queue)</option>
+                  <option value="private">Private (Dedicated GPU Worker)</option>
                 </select>
               </div>
 
@@ -665,24 +669,8 @@ sweeper:
                 </div>
               )}
 
-              {/* Worker Name (Visible in Private Mode) */}
-              {mode === 'private' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Target Worker
-                  </label>
-                  <input 
-                    type="text"
-                    value={workerName}
-                    onChange={(e) => setWorkerName(e.target.value)}
-                    placeholder="e.g. gpu_node_01"
-                    className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                </div>
-              )}
-
               {/* Scheduled Start Time (start_at) */}
-              <div className={mode === 'public' ? 'col-span-1' : 'col-span-1'}>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-1.5">
                   <Clock size={16} className="text-blue-500" />
                   Scheduled Start Time (Optional)
@@ -709,99 +697,38 @@ sweeper:
               </div>
             </div>
 
-            {/* Custom Drag & Drop Component */}
+            {/* Worker Fleet Selector (Visible in Private Mode) */}
+            {mode === 'private' && (
+              <div className="mb-6">
+                <WorkerFleetSelector
+                  selectedWorkerIp={workerName}
+                  onSelectWorker={(ip) => setWorkerName(ip)}
+                />
+              </div>
+            )}
+
+            {/* Smart Config Studio & File Selector */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Experiment Config
+                <label className="block text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  Configuración del Entrenamiento
                 </label>
-                <button 
-                  type="button"
-                  onClick={() => setShowTemplate(!showTemplate)}
-                  className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline focus:outline-none"
-                >
-                  <FileCode size={12} />
-                  {showTemplate ? 'Hide Template' : 'View YAML Template'}
-                </button>
+                {file && (
+                  <button 
+                    type="button"
+                    onClick={() => setFile(null)}
+                    className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                  >
+                    <X size={12} />
+                    Cambiar archivo seleccionado
+                  </button>
+                )}
               </div>
 
-              {/* Template Preview */}
-              {showTemplate && (
-                <div className="mb-4 bg-gray-950 rounded-lg p-4 border border-gray-800 overflow-x-auto shadow-inner">
-                  <pre className="text-xs font-mono text-green-400 leading-relaxed">{yamlTemplate}</pre>
-                </div>
-              )}
-              
-              {!file ? (
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`
-                    relative group border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ease-in-out
-                    flex flex-col items-center justify-center min-h-[250px]
-                    ${isDragging 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[0.99] ring-4 ring-blue-500/10' 
-                      : validationErrors.length > 0
-                        ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/5'
-                        : 'border-gray-300 dark:border-gray-700 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                    }
-                  `}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    onChange={handleFileSelect}
-                    accept=".yaml,.yml,.json,application/json,text/yaml,text/x-yaml,application/x-yaml"
-                  />
-                  
-                  {/* Icon Area */}
-                  <div className={`
-                    w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-colors duration-300
-                    ${isDragging ? 'bg-blue-100 text-blue-600' : validationErrors.length > 0 ? 'bg-red-100 text-red-500' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:bg-blue-50 dark:group-hover:bg-gray-700 group-hover:text-blue-500'}
-                  `}>
-                    {validationErrors.length > 0 ? <ShieldAlert size={36} /> : <UploadCloud size={36} />}
-                  </div>
-
-                  {/* Main Action Text */}
-                  <h3 className={`text-lg font-bold mb-2 ${validationErrors.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                    {validationErrors.length > 0 ? 'Configuration Rejected' : 'Click or Drag Configuration'}
-                  </h3>
-                  
-                  {validationErrors.length > 0 ? (
-                    <div className="text-sm text-red-500 dark:text-red-400 mb-6 max-w-sm mx-auto text-left bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/50">
-                      <p className="font-semibold mb-1 border-b border-red-200 dark:border-red-800/50 pb-1">Validation Errors:</p>
-                      <ul className="list-disc pl-4 space-y-1">
-                        {validationErrors.map((err, i) => (
-                          <li key={i}>{err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto leading-relaxed">
-                      Upload your training manifest to initialize the cluster job.
-                    </p>
-                  )}
-
-                  {/* Enhanced Limits and Types Indicator */}
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                      <FileCode size={12} className="text-blue-500" />
-                      .yaml, .yml, .json
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                      <HardDrive size={12} className="text-amber-500" />
-                      Max 5MB
-                    </span>
-                  </div>
-
-                </div>
-              ) : (
-                // Selected File State
-                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-center justify-between animate-fade-in shadow-sm min-h-[100px]">
-                  <div className="flex items-center gap-5">
+              {file ? (
+                // Active Selected File Banner
+                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex items-center justify-between animate-fade-in shadow-sm min-h-[90px]">
+                  <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center text-blue-600 border border-blue-100 dark:border-blue-900 shadow-sm">
                       <File size={24} />
                     </div>
@@ -812,7 +739,7 @@ sweeper:
                           {(file.size / 1024).toFixed(2)} KB
                         </span>
                         <span className="text-xs text-green-600 dark:text-green-400 font-bold flex items-center gap-1">
-                          <CheckCircle size={12} fill="currentColor" className="text-green-100 dark:text-green-900" /> Validated
+                          <CheckCircle size={12} className="text-green-500" /> Listo para Desplegar
                         </span>
                       </div>
                     </div>
@@ -820,11 +747,27 @@ sweeper:
                   <button 
                     type="button"
                     onClick={() => setFile(null)}
-                    className="p-3 hover:bg-white dark:hover:bg-gray-800 rounded-xl text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                    className="p-2.5 hover:bg-white dark:hover:bg-gray-800 rounded-xl text-gray-400 hover:text-red-500 transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
                     title="Remove file"
                   >
                     <X size={20} />
                   </button>
+                </div>
+              ) : (
+                <SmartConfigBuilder
+                  onConfigFileGenerated={(f) => processFile(f)}
+                  selectedWorkerIp={workerName || '192.168.1.68'}
+                />
+              )}
+
+              {validationErrors.length > 0 && (
+                <div className="text-sm text-red-500 dark:text-red-400 mt-4 max-w-full text-left bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-100 dark:border-red-800/50">
+                  <p className="font-semibold mb-1 border-b border-red-200 dark:border-red-800/50 pb-1">Errores de Validación:</p>
+                  <ul className="list-disc pl-4 space-y-1 text-xs">
+                    {validationErrors.map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
@@ -966,106 +909,68 @@ sweeper:
         )}
 
         {studyStatus === 'success' && studyDetail && (
-          <div className="animate-fade-in space-y-4">
-            {/* Status Badge */}
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-bold ${
-              STATUS_COLORS[studyDetail.state] || 'text-gray-500 bg-gray-50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
-            }`}>
-              {(() => {
-                const Icon = STATUS_ICONS[studyDetail.state] || Info;
-                return <Icon size={18} className={studyDetail.state === 'RETRY' ? 'animate-spin' : ''} />;
-              })()}
-              {studyDetail.state}
-            </div>
+          <div className="animate-fade-in space-y-6">
+            {/* Visual WPipe Pipeline Lifecycle */}
+            <PipelineProgressViewer
+              studyState={studyDetail.state}
+              activeTask={studyDetail.active_task?.name}
+              activeInvoker={studyDetail.active_worker}
+              resultsData={studyDetail.results_data}
+              errorData={studyDetail.error_data}
+            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {/* Study ID */}
-              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Study ID</span>
-                <span className="font-mono text-gray-900 dark:text-white break-all">{studyDetail.study_id}</span>
-              </div>
+            {/* Results Scorecard & Dual Audience Viewer */}
+            <StudyResultsViewer
+              studyId={studyDetail.study_id}
+              studyName={studyDetail.study_name}
+              resultsData={studyDetail.results_data}
+              config={studyDetail.config}
+              errorData={studyDetail.error_data}
+            />
 
-              {/* Study Name */}
-              {studyDetail.study_name && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Study Name</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{studyDetail.study_name}</span>
-                </div>
-              )}
-
-              {/* Active Invoker */}
-              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active / Last Invoker</span>
-                {studyDetail.active_worker ? (
-                  <div className="flex items-center gap-2">
-                    <Server size={16} className="text-blue-500" />
-                    <span className="font-medium text-gray-900 dark:text-white">{studyDetail.active_worker}</span>
+            {/* Advanced Technical Inspection Details */}
+            <details className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700 text-xs">
+              <summary className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer flex items-center justify-between select-none">
+                <span className="flex items-center gap-2">
+                  <Server size={14} className="text-blue-500" />
+                  Inspección Técnica Detallada (Nodos, Configuración RAW, Traza)
+                </span>
+                <span className="text-[11px] font-mono text-gray-400">UUID: {studyDetail.study_id}</span>
+              </summary>
+              
+              <div className="mt-4 space-y-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Invoker Activo / Último:</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-200">{studyDetail.active_worker || 'N/A (Finalizado o en Cola)'}</span>
                   </div>
-                ) : (
-                  <span className="text-gray-400 italic">No active invoker (pending or finished)</span>
-                )}
-                {studyDetail.all_invokers && studyDetail.all_invokers.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
-                    <span className="text-gray-500 dark:text-gray-400 block mb-1">All Participating Invokers:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {studyDetail.all_invokers.map((inv: string) => (
-                        <span key={inv} className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded font-mono text-[11px] border border-blue-200 dark:border-blue-800/50">
-                          {inv}
-                        </span>
-                      ))}
+                  {studyDetail.all_invokers && (
+                    <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Participantes de la Red:</span>
+                      <span className="text-gray-800 dark:text-gray-200">{studyDetail.all_invokers.join(', ')}</span>
                     </div>
+                  )}
+                </div>
+
+                {studyDetail.config && (
+                  <div>
+                    <span className="text-gray-500 font-mono block mb-1">Configuración Cruda (YAML/JSON):</span>
+                    <pre className="p-3 bg-gray-900 text-green-400 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono">
+                      {JSON.stringify(studyDetail.config, null, 2)}
+                    </pre>
+                  </div>
+                )}
+
+                {studyDetail.traceback && (
+                  <div>
+                    <span className="text-red-500 font-mono block mb-1">Traza de Error:</span>
+                    <pre className="p-3 bg-red-950/40 text-red-300 border border-red-800 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono whitespace-pre-wrap">
+                      {studyDetail.traceback}
+                    </pre>
                   </div>
                 )}
               </div>
-
-              {/* Active Task */}
-              {studyDetail.active_task && (
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Active Task</span>
-                  <span className="font-mono text-xs text-gray-900 dark:text-white break-all">{studyDetail.active_task.name}</span>
-                </div>
-              )}
-
-              {/* Config */}
-              {studyDetail.config && (
-                <div className="md:col-span-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Configuration</span>
-                  <pre className="text-xs font-mono text-gray-800 dark:text-gray-200 overflow-x-auto max-h-40">
-                    {JSON.stringify(studyDetail.config, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {/* Results */}
-              {studyDetail.results_data && (
-                <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
-                  <span className="block text-xs font-medium text-green-600 dark:text-green-400 mb-1">Results</span>
-                  <pre className="text-xs font-mono text-green-800 dark:text-green-200">
-                    {JSON.stringify(studyDetail.results_data, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {/* Error */}
-              {studyDetail.error_data && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
-                  <span className="block text-xs font-medium text-red-600 dark:text-red-400 mb-1">Error</span>
-                  <pre className="text-xs font-mono text-red-800 dark:text-red-200">
-                    {JSON.stringify(studyDetail.error_data, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              {/* Traceback */}
-              {studyDetail.traceback && (
-                <div className="md:col-span-2 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800">
-                  <span className="block text-xs font-medium text-red-600 dark:text-red-400 mb-1">Traceback</span>
-                  <pre className="text-xs font-mono text-red-800 dark:text-red-200 overflow-x-auto max-h-60 whitespace-pre-wrap">
-                    {studyDetail.traceback}
-                  </pre>
-                </div>
-              )}
-            </div>
+            </details>
           </div>
         )}
       </div>
