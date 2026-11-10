@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame, Calendar } from 'lucide-react';
+import { Rocket, File, FileCode, CheckCircle, AlertCircle, AlertTriangle, Zap, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame, Calendar } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -1049,86 +1049,125 @@ sweeper:
           </div>
         )}
 
-        {studyStatus === 'success' && studyDetail && (
-          <div className="animate-fade-in space-y-6">
-            {/* Visual WPipe Pipeline Lifecycle */}
-            <PipelineProgressViewer
-              studyState={studyDetail.state}
-              activeTask={studyDetail.active_task?.name}
-              activeInvoker={studyDetail.active_worker}
-              resultsData={studyDetail.results_data}
-              errorData={studyDetail.error_data}
-            />
+        {studyStatus === 'success' && studyDetail && (() => {
+          const isStudyCompleted = studyDetail.state === 'COMPLETED' || studyDetail.ready === true || !!studyDetail.results_data || (!!studyDetail.result && studyDetail.result.status === 'COMPLETED');
+          const isFailed = studyDetail.state === 'FAILED' || studyDetail.state === 'FAILURE' || !!studyDetail.error_data;
 
-            {/* Live Training Telemetry & Real-Time Loss Curves */}
-            <LiveTrainingTelemetry
-              studyId={studyDetail.study_id}
-              studyName={studyDetail.study_name}
-              activeWorker={studyDetail.active_worker || '192.168.1.68'}
-              currentEpoch={studyDetail.state === 'COMPLETED' ? (studyDetail.config?.train?.epochs || 5) : 3}
-              totalEpochs={studyDetail.config?.train?.epochs || 5}
-              etaSeconds={studyDetail.eta || 45}
-              isCompleted={studyDetail.state === 'COMPLETED' || !!studyDetail.results_data}
-              fitnessValue={studyDetail.result?.best_value ?? studyDetail.results_data?.best_value ?? studyDetail.results_data?.fitness ?? studyDetail.results_data?.accuracy ?? 0.5122}
-              mlflowUrl={studyDetail.mlflow_url || studyDetail.results_data?.mlflow_url}
-              realMetrics={studyDetail.real_metrics || studyDetail.results_data?.real_metrics}
-            />
+          return (
+            <div className="animate-fade-in space-y-6">
+              {/* Visual WPipe Pipeline Lifecycle */}
+              <PipelineProgressViewer
+                studyState={studyDetail.state}
+                activeTask={studyDetail.active_task?.name}
+                activeInvoker={studyDetail.active_worker}
+                resultsData={studyDetail.results_data}
+                errorData={studyDetail.error_data}
+              />
 
-            {/* Results Scorecard & Dual Audience Viewer */}
-            <StudyResultsViewer
-              studyId={studyDetail.study_id}
-              studyName={studyDetail.study_name}
-              resultsData={studyDetail.results_data}
-              result={studyDetail.result}
-              config={studyDetail.config}
-              errorData={studyDetail.error_data}
-            />
+              {/* Live Training Telemetry & Real-Time Loss Curves */}
+              <LiveTrainingTelemetry
+                studyId={studyDetail.study_id}
+                studyName={studyDetail.study_name || studyDetail.config?.sweeper?.study_name}
+                activeWorker={studyDetail.active_worker || '192.168.1.68'}
+                currentEpoch={isStudyCompleted ? (studyDetail.config?.train?.epochs || 5) : (studyDetail.current_epoch || 0)}
+                totalEpochs={studyDetail.config?.train?.epochs || 5}
+                etaSeconds={isStudyCompleted ? 0 : (studyDetail.eta || 60)}
+                isCompleted={isStudyCompleted}
+                fitnessValue={isStudyCompleted ? (studyDetail.result?.best_value ?? studyDetail.results_data?.best_value ?? studyDetail.results_data?.fitness ?? studyDetail.results_data?.accuracy ?? null) : null}
+                mlflowUrl={studyDetail.mlflow_url || studyDetail.results_data?.mlflow_url}
+                realMetrics={studyDetail.real_metrics || studyDetail.results_data?.real_metrics}
+              />
 
-            {/* Advanced Technical Inspection Details */}
-            <details className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700 text-xs">
-              <summary className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer flex items-center justify-between select-none">
-                <span className="flex items-center gap-2">
-                  <Server size={14} className="text-blue-500" />
-                  Inspección Técnica Detallada (Nodos, Configuración RAW, Traza)
-                </span>
-                <span className="text-[11px] font-mono text-gray-400">UUID: {studyDetail.study_id}</span>
-              </summary>
-              
-              <div className="mt-4 space-y-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Invoker Activo / Último:</span>
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{studyDetail.active_worker || 'N/A (Finalizado o en Cola)'}</span>
+              {/* Results Scorecard & Dual Audience Viewer (ONLY IF COMPLETED) */}
+              {isStudyCompleted ? (
+                <StudyResultsViewer
+                  studyId={studyDetail.study_id}
+                  studyName={studyDetail.study_name || studyDetail.config?.sweeper?.study_name}
+                  resultsData={studyDetail.results_data}
+                  result={studyDetail.result}
+                  config={studyDetail.config}
+                  errorData={studyDetail.error_data}
+                />
+              ) : isFailed ? (
+                <div className="p-6 bg-red-50 dark:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-800 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 flex items-center justify-center mx-auto">
+                    <AlertTriangle size={24} />
                   </div>
-                  {studyDetail.all_invokers && (
+                  <h4 className="font-bold text-red-900 dark:text-red-200 text-base">
+                    Entrenamiento Interrumpido / Fallido
+                  </h4>
+                  <p className="text-xs text-red-700 dark:text-red-300 max-w-lg mx-auto">
+                    El proceso de entrenamiento encontró un error durante su ejecución. Revisa los detalles de la traza técnica más abajo para más información.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-6 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/50 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 flex items-center justify-center mx-auto animate-pulse">
+                    <Zap size={24} />
+                  </div>
+                  <h4 className="font-bold text-blue-900 dark:text-blue-100 text-base">
+                    Entrenamiento en Ejecución en el Clúster
+                  </h4>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 max-w-xl mx-auto leading-relaxed">
+                    El estudio <strong className="font-mono text-blue-900 dark:text-white">{studyDetail.study_id.substring(0, 8)}...</strong> se encuentra activo (Estado: <span className="font-mono font-bold text-blue-600 dark:text-blue-400">{studyDetail.state}</span>).
+                    La inteligencia artificial está aprendiendo de las imágenes en el nodo asignado.
+                  </p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-[11px] font-mono">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+                    Actualizando telemetría en vivo cada 3 segundos...
+                  </div>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 pt-1">
+                    Las métricas de precisión (mAP50), el diagnóstico ejecutivo, los mapas de calor de explicabilidad visual (XAI) y la descarga del modelo aparecerán automáticamente aquí una vez que concluya el entrenamiento.
+                  </p>
+                </div>
+              )}
+
+              {/* Advanced Technical Inspection Details */}
+              <details className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700 text-xs">
+                <summary className="font-semibold text-gray-700 dark:text-gray-300 cursor-pointer flex items-center justify-between select-none">
+                  <span className="flex items-center gap-2">
+                    <Server size={14} className="text-blue-500" />
+                    Inspección Técnica Detallada (Nodos, Configuración RAW, Traza)
+                  </span>
+                  <span className="text-[11px] font-mono text-gray-400">UUID: {studyDetail.study_id}</span>
+                </summary>
+                
+                <div className="mt-4 space-y-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Participantes de la Red:</span>
-                      <span className="text-gray-800 dark:text-gray-200">{studyDetail.all_invokers.join(', ')}</span>
+                      <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Invoker Activo / Último:</span>
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{studyDetail.active_worker || 'N/A (Finalizado o en Cola)'}</span>
+                    </div>
+                    {studyDetail.all_invokers && (
+                      <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <span className="text-gray-500 font-mono block text-[11px] mb-0.5">Participantes de la Red:</span>
+                        <span className="text-gray-800 dark:text-gray-200">{studyDetail.all_invokers.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {studyDetail.config && (
+                    <div>
+                      <span className="text-gray-500 font-mono block mb-1">Configuración Cruda (YAML/JSON):</span>
+                      <pre className="p-3 bg-gray-900 text-green-400 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono">
+                        {JSON.stringify(studyDetail.config, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
+                  {studyDetail.traceback && (
+                    <div>
+                      <span className="text-red-500 font-mono block mb-1">Traza de Error:</span>
+                      <pre className="p-3 bg-red-950/40 text-red-300 border border-red-800 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono whitespace-pre-wrap">
+                        {studyDetail.traceback}
+                      </pre>
                     </div>
                   )}
                 </div>
-
-                {studyDetail.config && (
-                  <div>
-                    <span className="text-gray-500 font-mono block mb-1">Configuración Cruda (YAML/JSON):</span>
-                    <pre className="p-3 bg-gray-900 text-green-400 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono">
-                      {JSON.stringify(studyDetail.config, null, 2)}
-                    </pre>
-                  </div>
-                )}
-
-                {studyDetail.traceback && (
-                  <div>
-                    <span className="text-red-500 font-mono block mb-1">Traza de Error:</span>
-                    <pre className="p-3 bg-red-950/40 text-red-300 border border-red-800 rounded-lg overflow-x-auto max-h-48 text-[11px] font-mono whitespace-pre-wrap">
-                      {studyDetail.traceback}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            </details>
-          </div>
-        )}
+              </details>
+            </div>
+          );
+        })()}
       </div>
 
     </div>
