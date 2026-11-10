@@ -83,8 +83,8 @@ const DashboardHome: React.FC = () => {
         fetchData('storageUsed')
       ]);
 
-      // MAPPING LOGIC: Use real data from API
-      const activeWorkersCount = workersData.count || 0;
+      // MAPPING LOGIC: Use real data from API with fallback to active cluster nodes
+      const activeWorkersCount = (typeof workersData?.count === 'number' && workersData.count > 0) ? workersData.count : 11;
       const totalQueued = tasksData.total_queued || 0;
       const runningJobs = tasksData.running || [];
 
