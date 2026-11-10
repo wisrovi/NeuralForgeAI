@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Activity, 
   Cpu, 
@@ -26,7 +26,7 @@ interface LiveTrainingTelemetryProps {
   etaSeconds?: number;
   elapsedSeconds?: number;
   isCompleted?: boolean;
-  fitnessValue?: number;
+  fitnessValue?: number | null;
   mlflowUrl?: string;
   realMetrics?: Record<string, number>;
 }
@@ -35,12 +35,12 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
   studyId,
   studyName = 'Modelo en Entrenamiento',
   activeWorker = '192.168.1.68',
-  currentEpoch = 3,
+  currentEpoch = 0,
   totalEpochs = 5,
-  etaSeconds = 110,
-  elapsedSeconds = 165,
+  etaSeconds = 0,
+  elapsedSeconds = 0,
   isCompleted = false,
-  fitnessValue = 0.5122,
+  fitnessValue = null,
   mlflowUrl,
   realMetrics
 }) => {
@@ -55,18 +55,53 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
   };
 
   // Real recorded telemetry metrics from MLflow run
-  const boxLoss = realMetrics?.['train/box_loss'] ?? 2.379;
-  const valBoxLoss = realMetrics?.['val/box_loss'] ?? 2.534;
-  const clsLoss = realMetrics?.['train/cls_loss'] ?? 3.460;
-  const valClsLoss = realMetrics?.['val/cls_loss'] ?? 3.985;
-  const recallVal = realMetrics?.['metrics/recallB'] ?? 0.8444;
-  const map50Val = realMetrics?.['metrics/mAP50B'] ?? 0.0198;
+  const hasRealMetrics = Boolean(realMetrics && Object.keys(realMetrics).length > 0);
+  const boxLoss = realMetrics ? (realMetrics['train/box_loss'] ?? realMetrics['box_loss']) : undefined;
+  const valBoxLoss = realMetrics ? (realMetrics['val/box_loss'] ?? realMetrics['val_box_loss']) : undefined;
+  const clsLoss = realMetrics ? (realMetrics['train/cls_loss'] ?? realMetrics['cls_loss']) : undefined;
+  const valClsLoss = realMetrics ? (realMetrics['val/cls_loss'] ?? realMetrics['val_cls_loss']) : undefined;
+  const recallVal = realMetrics ? (realMetrics['metrics/recall(B)'] ?? realMetrics['metrics/recallB'] ?? realMetrics['recall']) : undefined;
+  const map50Val = realMetrics ? (realMetrics['metrics/mAP50(B)'] ?? realMetrics['metrics/mAP50B'] ?? realMetrics['mAP50']) : undefined;
 
-  // Resolve deep link to MLflow run
+  // Resolve deep link to MLflow experiment / run
+  const [resolvedExperimentId, setResolvedExperimentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (!studyName || studyName === 'Modelo en Entrenamiento') return;
+
+    if (studyName === 'Detector_Cesped_V3') {
+      setResolvedExperimentId('109');
+      return;
+    }
+    if (studyName === 'AREPO_ProtSup_Detector_v3_20261022') {
+      setResolvedExperimentId('97');
+      return;
+    }
+    if (studyName === 'Tattoo_detector') {
+      setResolvedExperimentId('110');
+      return;
+    }
+
+    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const apiBase = isLocalHost ? '/mlflow-proxy' : 'http://192.168.10.252:23435';
+
+    fetch(`${apiBase}/api/2.0/mlflow/experiments/get-by-name?experiment_name=${encodeURIComponent(studyName)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!isCancelled && data?.experiment?.experiment_id) {
+          setResolvedExperimentId(data.experiment.experiment_id);
+        }
+      })
+      .catch(() => {});
+
+    return () => { isCancelled = true; };
+  }, [studyName]);
+
   const targetMlflowUrl = mlflowUrl || 
-    (studyName === 'AREPO_ProtSup_Detector_v3_20261022'
-      ? 'http://192.168.10.252:23435/#/experiments/97/runs/1384a9d4e43c4b7abd31fd7d5f9943e9'
-      : (studyName ? `http://192.168.10.252:23435/#/experiments/0?search=attributes.name%20%3D%20%27${encodeURIComponent(studyName)}%27` : 'http://192.168.10.252:23435/'));
+    (resolvedExperimentId 
+      ? `http://192.168.10.252:23435/#/experiments/${resolvedExperimentId}` 
+      : 'http://192.168.10.252:23435/');
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm space-y-5">
@@ -145,7 +180,9 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
             <div>
               <span className="text-gray-500 dark:text-gray-400 block text-[10px]">Fitness Actual (Optuna):</span>
               <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
-                {Number(fitnessValue).toFixed(4)}
+                {fitnessValue !== null && fitnessValue !== undefined && !isNaN(Number(fitnessValue))
+                  ? Number(fitnessValue).toFixed(4)
+                  : (isCompleted ? 'N/A' : 'Pendiente')}
               </span>
             </div>
           </div>
@@ -163,7 +200,7 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                 <ShieldCheck size={11} />
-                Telemetría 100% Auténtica
+                {hasRealMetrics ? 'Telemetría 100% Auténtica' : 'Sincronización en Espera'}
               </span>
               <a
                 href={targetMlflowUrl}
@@ -177,59 +214,81 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Box Loss Metric Card */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
-              <div className="flex justify-between items-center mb-1 text-[11px]">
-                <span className="text-gray-500 font-medium">Error de Caja (box_loss)</span>
-                <span className="font-mono font-bold text-red-500">{boxLoss.toFixed(3)}</span>
-              </div>
-              <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
-                <span>Train: <strong className="font-mono">{boxLoss.toFixed(3)}</strong></span>
-                <span>Val: <strong className="font-mono">{valBoxLoss.toFixed(3)}</strong></span>
-              </div>
-              <span className="text-[9px] text-gray-400 block text-right mt-1">Convergencia de localización</span>
+          {!hasRealMetrics ? (
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isCompleted 
+                  ? 'No se registraron curvas de telemetría continuas en MLflow para este estudio.' 
+                  : 'Sincronizando con MLflow... Las curvas de pérdida y convergencia se mostrarán en vivo conforme concluyan las épocas de entrenamiento en el worker.'}
+              </p>
             </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Box Loss Metric Card */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
+                <div className="flex justify-between items-center mb-1 text-[11px]">
+                  <span className="text-gray-500 font-medium">Error de Caja (box_loss)</span>
+                  <span className="font-mono font-bold text-red-500">
+                    {boxLoss !== undefined ? boxLoss.toFixed(3) : '--'}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
+                  <span>Train: <strong className="font-mono">{boxLoss !== undefined ? boxLoss.toFixed(3) : '--'}</strong></span>
+                  <span>Val: <strong className="font-mono">{valBoxLoss !== undefined ? valBoxLoss.toFixed(3) : '--'}</strong></span>
+                </div>
+                <span className="text-[9px] text-gray-400 block text-right mt-1">Convergencia de localización</span>
+              </div>
 
-            {/* Cls Loss Metric Card */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
-              <div className="flex justify-between items-center mb-1 text-[11px]">
-                <span className="text-gray-500 font-medium">Error de Clase (cls_loss)</span>
-                <span className="font-mono font-bold text-amber-500">{clsLoss.toFixed(3)}</span>
+              {/* Cls Loss Metric Card */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
+                <div className="flex justify-between items-center mb-1 text-[11px]">
+                  <span className="text-gray-500 font-medium">Error de Clase (cls_loss)</span>
+                  <span className="font-mono font-bold text-amber-500">
+                    {clsLoss !== undefined ? clsLoss.toFixed(3) : '--'}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
+                  <span>Train: <strong className="font-mono">{clsLoss !== undefined ? clsLoss.toFixed(3) : '--'}</strong></span>
+                  <span>Val: <strong className="font-mono">{valClsLoss !== undefined ? valClsLoss.toFixed(3) : '--'}</strong></span>
+                </div>
+                <span className="text-[9px] text-gray-400 block text-right mt-1">Separación de clases</span>
               </div>
-              <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
-                <span>Train: <strong className="font-mono">{clsLoss.toFixed(3)}</strong></span>
-                <span>Val: <strong className="font-mono">{valClsLoss.toFixed(3)}</strong></span>
-              </div>
-              <span className="text-[9px] text-gray-400 block text-right mt-1">Separación de clases</span>
-            </div>
 
-            {/* Recall Metric Card */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
-              <div className="flex justify-between items-center mb-1 text-[11px]">
-                <span className="text-gray-500 font-medium">Capacidad Recall</span>
-                <span className="font-mono font-bold text-emerald-500">{(recallVal * 100).toFixed(1)}%</span>
+              {/* Recall Metric Card */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
+                <div className="flex justify-between items-center mb-1 text-[11px]">
+                  <span className="text-gray-500 font-medium">Capacidad Recall</span>
+                  <span className="font-mono font-bold text-emerald-500">
+                    {recallVal !== undefined ? `${(recallVal * 100).toFixed(1)}%` : '--'}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
+                  <span>Objetos detectados:</span>
+                  <strong className="font-mono text-emerald-600 dark:text-emerald-400">
+                    {recallVal !== undefined ? `${(recallVal * 100).toFixed(1)}%` : '--'}
+                  </strong>
+                </div>
+                <span className="text-[9px] text-gray-400 block text-right mt-1">Minimización de falsos negativos</span>
               </div>
-              <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
-                <span>Objetos detectados:</span>
-                <strong className="font-mono text-emerald-600 dark:text-emerald-400">84.4%</strong>
-              </div>
-              <span className="text-[9px] text-gray-400 block text-right mt-1">Minimización de falsos negativos</span>
-            </div>
 
-            {/* Fitness Metric Card */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
-              <div className="flex justify-between items-center mb-1 text-[11px]">
-                <span className="text-gray-500 font-medium">Fitness Óptimo</span>
-                <span className="font-mono font-bold text-blue-500">{Number(fitnessValue).toFixed(4)}</span>
+              {/* Fitness Metric Card */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700/70">
+                <div className="flex justify-between items-center mb-1 text-[11px]">
+                  <span className="text-gray-500 font-medium">Fitness Óptimo</span>
+                  <span className="font-mono font-bold text-blue-500">
+                    {fitnessValue !== null && fitnessValue !== undefined && !isNaN(Number(fitnessValue))
+                      ? Number(fitnessValue).toFixed(4)
+                      : (map50Val !== undefined ? map50Val.toFixed(4) : '--')}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
+                  <span>Objetivo sweeper:</span>
+                  <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">mAP50-95(B)</span>
+                </div>
+                <span className="text-[9px] text-gray-400 block text-right mt-1">Métrica rectora de Optuna</span>
               </div>
-              <div className="text-[10px] text-gray-500 flex justify-between pt-1 border-t border-gray-200/50 dark:border-gray-700/50">
-                <span>Objetivo sweeper:</span>
-                <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">mAP50-95(B)</span>
-              </div>
-              <span className="text-[9px] text-gray-400 block text-right mt-1">Métrica rectora de Optuna</span>
             </div>
-          </div>
+          )}
 
           <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 rounded-lg flex items-center justify-between text-xs">
             <span className="text-gray-600 dark:text-gray-400 text-[11px]">
