@@ -77,47 +77,66 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
       const expName = effectiveStudyName || (isTattoo ? 'Tattoo_detector' : (isProtesis ? 'AREPO_ProtSup_Detector_v3_20261022' : ''));
       if (!expName || expName === 'Modelo de Visión Artificial') return;
       try {
+        let expId: string | null = null;
         const expRes = await fetch(`${mlflowApiBase}/api/2.0/mlflow/experiments/get-by-name?experiment_name=${encodeURIComponent(expName)}`);
         if (expRes.ok && !isCancelled) {
           const expData = await expRes.json();
-          const expId = expData?.experiment?.experiment_id;
-          if (expId) {
-            const runsRes = await fetch(`${mlflowApiBase}/api/2.0/mlflow/runs/search`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                experiment_ids: [expId],
-                max_results: 10,
-                order_by: ['start_time DESC']
-              })
+          expId = expData?.experiment?.experiment_id || null;
+        }
+
+        // Fallback: search experiments if get-by-name didn't find it directly
+        if (!expId && !isCancelled) {
+          const searchExpRes = await fetch(`${mlflowApiBase}/api/2.0/mlflow/experiments/search?max_results=50`);
+          if (searchExpRes.ok) {
+            const allExps = await searchExpRes.json();
+            const matchingExp = allExps.experiments?.find((e: any) => {
+              if (isCesped && /cesped|elania/i.test(e.name)) return true;
+              if (isTattoo && /tatto|tatuaje/i.test(e.name)) return true;
+              if (isProtesis && /protesis|protsup/i.test(e.name)) return true;
+              return false;
             });
-            if (runsRes.ok && !isCancelled) {
-              const runsData = await runsRes.json();
-              if (runsData.runs && runsData.runs.length > 0) {
-                // Find run with valid xai_manifest or latest finished run
-                let chosenRunId = null;
-                for (const run of runsData.runs) {
-                  const rId = run.info?.run_id;
-                  if (!rId) continue;
-                  try {
-                    const testRes = await fetch(`${mlflowApiBase}/get-artifact?path=extras/model_focus/xai_manifest.json&run_uuid=${rId}`);
-                    if (testRes.ok) {
-                      const manifest = await testRes.json();
-                      if (manifest && manifest.samples && manifest.samples.length > 0) {
-                        chosenRunId = rId;
-                        setManifestData(manifest);
-                        break;
-                      }
+            if (matchingExp) {
+              expId = matchingExp.experiment_id;
+            }
+          }
+        }
+
+        if (expId && !isCancelled) {
+          const runsRes = await fetch(`${mlflowApiBase}/api/2.0/mlflow/runs/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              experiment_ids: [expId],
+              max_results: 10,
+              order_by: ['start_time DESC']
+            })
+          });
+          if (runsRes.ok && !isCancelled) {
+            const runsData = await runsRes.json();
+            if (runsData.runs && runsData.runs.length > 0) {
+              // Find run with valid xai_manifest or latest finished run
+              let chosenRunId = null;
+              for (const run of runsData.runs) {
+                const rId = run.info?.run_id;
+                if (!rId) continue;
+                try {
+                  const testRes = await fetch(`${mlflowApiBase}/get-artifact?path=extras/model_focus/xai_manifest.json&run_uuid=${rId}`);
+                  if (testRes.ok) {
+                    const manifest = await testRes.json();
+                    if (manifest && manifest.samples && manifest.samples.length > 0) {
+                      chosenRunId = rId;
+                      setManifestData(manifest);
+                      break;
                     }
-                  } catch (_) {}
-                }
-                if (!chosenRunId) {
-                  const finishedRun = runsData.runs.find((r: any) => r.info?.status === 'FINISHED') || runsData.runs[0];
-                  chosenRunId = finishedRun?.info?.run_id;
-                }
-                if (chosenRunId && !isCancelled) {
-                  setLiveRunId(chosenRunId);
-                }
+                  }
+                } catch (_) {}
+              }
+              if (!chosenRunId) {
+                const finishedRun = runsData.runs.find((r: any) => r.info?.status === 'FINISHED') || runsData.runs[0];
+                chosenRunId = finishedRun?.info?.run_id;
+              }
+              if (chosenRunId && !isCancelled) {
+                setLiveRunId(chosenRunId);
               }
             }
           }
@@ -168,8 +187,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
         bbox: { cx: 0.5, cy: 0.5, w: 0.45, h: 0.45 },
         xai: s.metrics || { deletion_auc: 0.502, insertion_auc: 0.498, mc_variance: 0.0589 },
         focusArea: s.focus_area || 'Activación convolucional Eigen-CAM en capas profundas',
-        imageUrl: `${mlflowBaseUrl}/get-artifact?path=${s.heatmap_artifact}&run_uuid=${activeRunId}`,
-        labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=${s.clean_artifact}&run_uuid=${activeRunId}`
+        imageUrl: `${mlflowApiBase}/get-artifact?path=${s.heatmap_artifact}&run_uuid=${activeRunId}`,
+        labelImageUrl: `${mlflowApiBase}/get-artifact?path=${s.clean_artifact}&run_uuid=${activeRunId}`
       }));
 
       if (manifestData.validation_batch?.available) {
@@ -184,8 +203,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.5, cy: 0.5, w: 0.9, h: 0.9 },
           xai: { deletion_auc: 0.502, insertion_auc: 0.498, mc_variance: 0.0589 },
           focusArea: 'Validación oficial Ultralytics: Batch completo de inferencias vs etiquetas reales',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=${manifestData.validation_batch.pred_artifact}&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=${manifestData.validation_batch.labels_artifact}&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=${manifestData.validation_batch.pred_artifact}&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=${manifestData.validation_batch.labels_artifact}&run_uuid=${activeRunId}`
         });
       }
 
@@ -219,8 +238,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.52, cy: 0.48, w: 0.44, h: 0.46 },
           xai: { deletion_auc: 0.502, insertion_auc: 0.498, mc_variance: 0.0589 },
           focusArea: 'Trazo y pigmentación dérmica del tatuaje en piel',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/arepo_012061f85285f59b328d4c06d595d43f.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/arepo_012061f85285f59b328d4c06d595d43f.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/arepo_012061f85285f59b328d4c06d595d43f.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/arepo_012061f85285f59b328d4c06d595d43f.jpg&run_uuid=${activeRunId}`
         },
         {
           id: 'tattoo-sample-2',
@@ -233,8 +252,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.48, cy: 0.52, w: 0.42, h: 0.5 },
           xai: { deletion_auc: 0.515, insertion_auc: 0.485, mc_variance: 0.0492 },
           focusArea: 'Contraste de tinta y textura epidérmica',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/arepo_07a44d535624c2312effafee7475cdd5.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/arepo_07a44d535624c2312effafee7475cdd5.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/arepo_07a44d535624c2312effafee7475cdd5.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/arepo_07a44d535624c2312effafee7475cdd5.jpg&run_uuid=${activeRunId}`
         },
         {
           id: 'tattoo-sample-3',
@@ -247,8 +266,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.51, cy: 0.46, w: 0.48, h: 0.45 },
           xai: { deletion_auc: 0.508, insertion_auc: 0.492, mc_variance: 0.0518 },
           focusArea: 'Densidad cromática y silueta de ilustración',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/arepo_07f32aaeb9e6b4aa63c8113a699ec698.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/arepo_07f32aaeb9e6b4aa63c8113a699ec698.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/arepo_07f32aaeb9e6b4aa63c8113a699ec698.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/arepo_07f32aaeb9e6b4aa63c8113a699ec698.jpg&run_uuid=${activeRunId}`
         },
         {
           id: 'sample-val-grid',
@@ -261,8 +280,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.5, cy: 0.5, w: 0.9, h: 0.9 },
           xai: { deletion_auc: 0.502, insertion_auc: 0.498, mc_variance: 0.0589 },
           focusArea: 'Validación oficial Ultralytics: Batch completo de inferencias vs etiquetas reales',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=val_batch0_pred.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=val_batch0_labels.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=val_batch0_pred.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=val_batch0_labels.jpg&run_uuid=${activeRunId}`
         }
       ];
 
@@ -282,7 +301,7 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
     }
 
     if (isCesped) {
-      const activeRunId = liveRunId || resultsData?.mlflow_run_id || 'cfc32791697049b0bf90fdb2f3644b8b';
+      const activeRunId = liveRunId || resultsData?.mlflow_run_id || '2ca4f2199944469298390d553774977d';
       const cespedSamples: RealDatasetSample[] = [
         {
           id: 'cesped-sample-1',
@@ -295,8 +314,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.5, cy: 0.5, w: 0.45, h: 0.45 },
           xai: { deletion_auc: 0.502, insertion_auc: 0.498, mc_variance: 0.0589 },
           focusArea: 'Activación convolucional Eigen-CAM en áreas de anomalías y vegetación',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/001cd2de6865177acd1982c4d1a1cc17b694ac417d082104b59d959390f80f58_DJI_0881.MP4-3668.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/001cd2de6865177acd1982c4d1a1cc17b694ac417d082104b59d959390f80f58_DJI_0881.MP4-3668.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/001cd2de6865177acd1982c4d1a1cc17b694ac417d082104b59d959390f80f58_DJI_0881.MP4-3668.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/001cd2de6865177acd1982c4d1a1cc17b694ac417d082104b59d959390f80f58_DJI_0881.MP4-3668.jpg&run_uuid=${activeRunId}`
         },
         {
           id: 'cesped-sample-2',
@@ -309,8 +328,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.48, cy: 0.52, w: 0.42, h: 0.5 },
           xai: { deletion_auc: 0.515, insertion_auc: 0.485, mc_variance: 0.0492 },
           focusArea: 'Densidad y textura en cuadrantes con variación de reflectancia',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/005b1b1c57e781615f62b6a2b613de39e1d0bf6625e0269fe992ae72e4e37b9d_DJI_0881.MP4-3470.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/005b1b1c57e781615f62b6a2b613de39e1d0bf6625e0269fe992ae72e4e37b9d_DJI_0881.MP4-3470.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/005b1b1c57e781615f62b6a2b613de39e1d0bf6625e0269fe992ae72e4e37b9d_DJI_0881.MP4-3470.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/005b1b1c57e781615f62b6a2b613de39e1d0bf6625e0269fe992ae72e4e37b9d_DJI_0881.MP4-3470.jpg&run_uuid=${activeRunId}`
         },
         {
           id: 'cesped-sample-3',
@@ -323,8 +342,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
           bbox: { cx: 0.51, cy: 0.46, w: 0.48, h: 0.45 },
           xai: { deletion_auc: 0.508, insertion_auc: 0.492, mc_variance: 0.0518 },
           focusArea: 'Respuesta espectral en vegetación y patrones de corte',
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/0092bd3ce1363ab78a4e0a2bd874272641296d6f8a7e890cf1dac79201a92588_DJI_0881.MP4-3520.jpg&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/0092bd3ce1363ab78a4e0a2bd874272641296d6f8a7e890cf1dac79201a92588_DJI_0881.MP4-3520.jpg&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/0092bd3ce1363ab78a4e0a2bd874272641296d6f8a7e890cf1dac79201a92588_DJI_0881.MP4-3520.jpg&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/0092bd3ce1363ab78a4e0a2bd874272641296d6f8a7e890cf1dac79201a92588_DJI_0881.MP4-3520.jpg&run_uuid=${activeRunId}`
         }
       ];
 
@@ -346,14 +365,14 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
         if (s.id.includes('val-grid')) {
           return {
             ...s,
-            imageUrl: `${mlflowBaseUrl}/get-artifact?path=val_batch0_pred.jpg&run_uuid=${activeRunId}`,
-            labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=val_batch0_labels.jpg&run_uuid=${activeRunId}`
+            imageUrl: `${mlflowApiBase}/get-artifact?path=val_batch0_pred.jpg&run_uuid=${activeRunId}`,
+            labelImageUrl: `${mlflowApiBase}/get-artifact?path=val_batch0_labels.jpg&run_uuid=${activeRunId}`
           };
         }
         return {
           ...s,
-          imageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/model_focus/${s.filename}&run_uuid=${activeRunId}`,
-          labelImageUrl: `${mlflowBaseUrl}/get-artifact?path=extras/post_train_results/${s.filename}&run_uuid=${activeRunId}`
+          imageUrl: `${mlflowApiBase}/get-artifact?path=extras/model_focus/${s.filename}&run_uuid=${activeRunId}`,
+          labelImageUrl: `${mlflowApiBase}/get-artifact?path=extras/post_train_results/${s.filename}&run_uuid=${activeRunId}`
         };
       });
 
@@ -629,7 +648,10 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
               }}
             >
               {/* Image underneath so geometry is 100% aligned */}
-              <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-black">
+              <div 
+                className="absolute inset-0 w-full h-full flex items-center justify-center bg-black transition-opacity"
+                style={{ opacity: isValBatch ? 1 : heatmapIntensity / 100 }}
+              >
                 <img
                   src={rightImageSrc}
                   alt="Inferencia del Modelo"
@@ -637,8 +659,8 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
                 />
               </div>
 
-              {/* Thermal Jet Heatmap Layer (rendered for any single XAI test sample or custom image) */}
-              {!isValBatch && (
+              {/* Synthetic Simulation Fallback Layer (ONLY rendered when a client-side custom image is uploaded without server inference) */}
+              {customImage && (
                 <div 
                   className="absolute inset-0 w-full h-full mix-blend-screen transition-opacity"
                   style={{ opacity: heatmapIntensity / 100 }}
