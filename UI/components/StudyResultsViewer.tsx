@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Trophy, 
   Award, 
@@ -61,11 +61,48 @@ export const StudyResultsViewer: React.FC<StudyResultsViewerProps> = ({
       ? Number((rawAccuracy * 100).toFixed(2)) 
       : 0;
 
+  // Resolve deep link to MLflow experiment / run
+  const [resolvedExperimentId, setResolvedExperimentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (!studyName || studyName === 'Modelo de Visión Artificial') return;
+
+    if (studyName === 'Detector_Cesped_V3') {
+      setResolvedExperimentId('109');
+      return;
+    }
+    if (studyName === 'AREPO_ProtSup_Detector_v3_20261022') {
+      setResolvedExperimentId('97');
+      return;
+    }
+    if (studyName === 'Tattoo_detector') {
+      setResolvedExperimentId('110');
+      return;
+    }
+
+    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const mlflowApiBase = isLocalHost ? '/mlflow-proxy' : mlflowBaseUrl;
+
+    fetch(`${mlflowApiBase}/api/2.0/mlflow/experiments/get-by-name?experiment_name=${encodeURIComponent(studyName)}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!isCancelled && data?.experiment?.experiment_id) {
+          setResolvedExperimentId(data.experiment.experiment_id);
+        }
+      })
+      .catch(() => {});
+
+    return () => { isCancelled = true; };
+  }, [studyName, mlflowBaseUrl]);
+
   // Deep-link to MLflow experiment / run
   const mlflowDeepLink = resultsData?.mlflow_url || 
-    (studyName === 'AREPO_ProtSup_Detector_v3_20261022'
-      ? `${mlflowBaseUrl}/#/experiments/97/runs/1384a9d4e43c4b7abd31fd7d5f9943e9`
-      : (studyName ? `${mlflowBaseUrl}/#/experiments/0?search=attributes.name%20%3D%20%27${encodeURIComponent(studyName)}%27` : `${mlflowBaseUrl}/`));
+    (resolvedExperimentId && resultsData?.mlflow_run_id
+      ? `${mlflowBaseUrl}/#/experiments/${resolvedExperimentId}/runs/${resultsData.mlflow_run_id}`
+      : (resolvedExperimentId
+        ? `${mlflowBaseUrl}/#/experiments/${resolvedExperimentId}`
+        : `${mlflowBaseUrl}/`));
 
   // Friendly Interpretation Tier
   let tierLabel = 'En Evaluación';
