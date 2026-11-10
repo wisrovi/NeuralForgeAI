@@ -8,6 +8,18 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          '/mlflow-proxy': {
+            target: 'http://192.168.10.252:23435',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
+          },
+          '/control-proxy': {
+            target: 'http://192.168.10.252:23442',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/control-proxy/, '')
+          }
+        }
       },
       preview: {
         port: 4173,
@@ -17,6 +29,18 @@ export default defineConfig(({ mode }) => {
           'Pragma': 'no-cache',
           'Expires': '0'
         },
+        proxy: {
+          '/mlflow-proxy': {
+            target: 'http://192.168.10.252:23435',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
+          },
+          '/control-proxy': {
+            target: 'http://192.168.10.252:23442',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/control-proxy/, '')
+          }
+        }
       },
       plugins: [react()],
       define: {
