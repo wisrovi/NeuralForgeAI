@@ -47,11 +47,14 @@ class CeleryService:
             dict[str, list[str]]: Worker names mapped to queue names.
         """
         workers_info: dict[str, list[str]] = {}
-        inspector = self.app.control.inspect(timeout=1.5)
-        active_queues = inspector.active_queues()
-        if active_queues:
-            for worker_name, queues in active_queues.items():
-                workers_info[worker_name] = [q.get("name", "") for q in queues]
+        try:
+            inspector = self.app.control.inspect(timeout=1.5)
+            active_queues = inspector.active_queues()
+            if active_queues:
+                for worker_name, queues in active_queues.items():
+                    workers_info[worker_name] = [q.get("name", "") for q in queues]
+        except Exception:
+            return {}
         return workers_info
 
     def inspect_running_tasks(self) -> list[dict[str, Any]]:
@@ -61,19 +64,22 @@ class CeleryService:
             list[dict[str, Any]]: List of running task summaries.
         """
         running: list[dict[str, Any]] = []
-        inspector = self.app.control.inspect(timeout=1.0)
-        active = inspector.active()
-        if active:
-            for worker, tasks in active.items():
-                for t in tasks:
-                    running.append(
-                        {
-                            "worker": worker,
-                            "id": t.get("id"),
-                            "name": t.get("name"),
-                            "args": str(t.get("args"))[:100],
-                        }
-                    )
+        try:
+            inspector = self.app.control.inspect(timeout=1.0)
+            active = inspector.active()
+            if active:
+                for worker, tasks in active.items():
+                    for t in tasks:
+                        running.append(
+                            {
+                                "worker": worker,
+                                "id": t.get("id"),
+                                "name": t.get("name"),
+                                "args": str(t.get("args"))[:100],
+                            }
+                        )
+        except Exception:
+            return []
         return running
 
     def broadcast_docker_pull(self, image_name: str) -> tuple[int, int, dict[str, Any]]:
