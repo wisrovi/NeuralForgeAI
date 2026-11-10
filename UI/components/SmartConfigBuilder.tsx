@@ -23,7 +23,7 @@ export const SmartConfigBuilder: React.FC<SmartConfigBuilderProps> = ({
   onConfigFileGenerated,
   selectedWorkerIp = '192.168.1.68'
 }) => {
-  const [activeTab, setActiveTab] = useState<'wizard' | 'raw'>('wizard');
+  const [activeTab, setActiveTab] = useState<'wizard' | 'raw'>('raw');
 
   // Wizard State
   const [taskType, setTaskType] = useState<'detect' | 'segment' | 'classify'>('detect');
