@@ -66,7 +66,14 @@ docker network create control_network
 
 ## 📜 Changelog & Version History
 
-### Version 2.1.0 (Current Release) - 2026-07-31
+### Version 2.2.0 (Current Release) - 2026-11-10
+*   **Celery Redis-py Dependency Upgrade:** Upgraded `redis` to `>=6.1.0,<7` across backend APIs and Gradio launcher services to resolve the Kombu runtime exception `ImproperlyConfigured: Redis transport requires redis-py versions 6.1.0 or later`, restoring worker discovery and study queuing.
+*   **Resilient Worker Inspection:** Wrapped worker queue inspection and running task queries in defensive error handlers to safeguard the API gateway from unexpected broker timeouts.
+*   **Authentic Telemetry & Results Isolation:** Fixed premature display of completed metrics and XAI heatmaps while training studies are in `STARTED` or `PENDING` states.
+*   **Dataset Separation in VisualXaiStudio:** Eliminated cross-dataset mock sample fallbacks, guaranteeing that only authentic heatmaps and artifacts from the current study's dataset (e.g. Prótesis Superior vs Césped vs Tattoo) are presented.
+*   **Zero-Mock Live Telemetry:** Replaced hardcoded fallback loss and recall values (e.g. 2.379, 84.4%) with live synchronization status indicators until MLflow records the first training epochs.
+
+### Version 2.1.0 - 2026-07-31
 *   **Cluster Broadcast Docker Pull Interface:** Added a new Cluster Admin tab (accessible for administrators only) in the UI settings panel and registered the `/admin/broadcast-pull` API endpoint in the FastAPI gateway, allowing immediate, massive docker image updates to all remote invokers in the cluster.
 
 ### Version 2.0.0 - 2026-07-03
