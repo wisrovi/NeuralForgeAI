@@ -36,8 +36,11 @@ interface WorkerFleetSelectorProps {
 export const WorkerFleetSelector: React.FC<WorkerFleetSelectorProps> = ({
   selectedWorkerIp,
   onSelectWorker,
-  workersApiUrl = 'http://192.168.10.252:23442/workers'
+  workersApiUrl
 }) => {
+  const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const effectiveWorkersUrl = workersApiUrl || (isLocalHost ? '/control-proxy/workers' : 'http://192.168.10.252:23442/workers');
+
   const [nodes, setNodes] = useState<WorkerNodeInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [expertMode, setExpertMode] = useState<boolean>(false);
@@ -55,7 +58,7 @@ export const WorkerFleetSelector: React.FC<WorkerFleetSelectorProps> = ({
     let isMounted = true;
     const fetchWorkers = async () => {
       try {
-        const res = await fetch(workersApiUrl);
+        const res = await fetch(effectiveWorkersUrl);
         if (!res.ok) throw new Error('Failed to fetch worker list');
         const data = await res.json();
         
