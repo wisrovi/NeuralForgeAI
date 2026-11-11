@@ -43,9 +43,9 @@ const currentHost = (rawHost === 'localhost' || rawHost === '127.0.0.1') ? defau
 const API_HOST = getEnv('VITE_API_HOST', currentHost);
 const CONTROL_HOST = getEnv('VITE_CONTROL_HOST', currentHost);
 
-const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const API_BASE = isLocal ? '/control-proxy' : getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
-const UPLOAD_API_BASE = isLocal ? '/control-proxy' : getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
+const isBrowser = typeof window !== 'undefined';
+export const API_BASE = isBrowser ? '/control-proxy' : getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
+export const UPLOAD_API_BASE = isBrowser ? '/control-proxy' : getEnv('VITE_API_URL', `http://${API_HOST}:23442`);
 
 // === API CONFIGURATION ===
 
