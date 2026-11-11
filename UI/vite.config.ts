@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
+    const defaultControlProxy = process.env.CONTROL_HOST ? `http://${process.env.CONTROL_HOST}:23442` : 'http://neuralforge-api-svc:8000';
     return {
       server: {
         port: 3000,
@@ -15,7 +16,7 @@ export default defineConfig(({ mode }) => {
             rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
           },
           '/control-proxy': {
-            target: process.env.VITE_CONTROL_PROXY_TARGET || 'http://192.168.1.68:23442',
+            target: process.env.VITE_CONTROL_PROXY_TARGET || defaultControlProxy,
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/control-proxy/, '')
           }
@@ -36,7 +37,7 @@ export default defineConfig(({ mode }) => {
             rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
           },
           '/control-proxy': {
-            target: process.env.VITE_CONTROL_PROXY_TARGET || 'http://192.168.1.68:23442',
+            target: process.env.VITE_CONTROL_PROXY_TARGET || defaultControlProxy,
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/control-proxy/, '')
           }
