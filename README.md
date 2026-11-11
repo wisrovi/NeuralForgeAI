@@ -66,7 +66,11 @@ docker network create control_network
 
 ## 📜 Changelog & Version History
 
-### Version 2.2.2 (Current Release) - 2026-11-11
+### Version 2.2.3 (Current Release) - 2026-11-11
+*   **Visual XAI Studio React Rules of Hooks Fix:** Reorganized hook definitions in `VisualXaiStudio.tsx` to ensure all `useCallback` drag and touch handlers are registered before conditional sample renders, eliminating the `Minified React error #310` runtime crash when viewing study heatmaps.
+*   **Dynamic MLflow Artifact Heatmap Discovery:** Added an automated discovery fallback in `VisualXaiStudio` that queries the MLflow artifacts listing API (`/api/2.0/mlflow/artifacts/list?path=extras/model_focus`) whenever `xai_manifest.json` is missing or empty, ensuring heatmaps and visual attention maps are always rendered without exception for every training run.
+
+### Version 2.2.2 - 2026-11-11
 *   **Kubernetes Production Control Stack Deployment:** Introduced complete Kubernetes manifests in `deploy/k8s/` orchestrating the FastAPI REST gateway (`neuralforge-api`), Optuna study manager (`neuralforge-manager`), and W-Darwin Ops React UI (`neuralforge-ui`) within the `train-service` namespace, decoupling compute from NAS storage.
 *   **Universal MLflow Proxying:** Replaced local-only host checks in `LiveTrainingTelemetry`, `VisualXaiStudio`, and `StudyResultsViewer` with universal browser proxy routing via `/mlflow-proxy`, completely eliminating cross-origin CORS errors across all client networks.
 *   **High Availability Manager Worker:** Deployed Celery manager worker directly inside Kubernetes, synchronized across all 11 worker invokers.
