@@ -64,9 +64,9 @@ export const VisualXaiStudio: React.FC<VisualXaiStudioProps> = ({
   const isCesped = /cesped|grass|elania/i.test(rawDataPath) || /cesped|grass|elania/i.test(effectiveStudyName);
   const isProtesis = /protesis|superior/i.test(rawDataPath) || /protesis|superior/i.test(effectiveStudyName);
 
-  // Use proxy on localhost to prevent browser CORS blocks
-  const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const mlflowApiBase = isLocalHost ? '/mlflow-proxy' : mlflowBaseUrl;
+  // Use proxy on browser to prevent CORS blocks
+  const isBrowser = typeof window !== 'undefined';
+  const mlflowApiBase = isBrowser ? '/mlflow-proxy' : mlflowBaseUrl;
 
   // Dynamic MLflow Run Discovery
   useEffect(() => {
