@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
             rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
           },
           '/control-proxy': {
-            target: 'http://192.168.10.252:23442',
+            target: process.env.VITE_CONTROL_PROXY_TARGET || 'http://192.168.1.68:23442',
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/control-proxy/, '')
           }
@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
             rewrite: (path) => path.replace(/^\/mlflow-proxy/, '')
           },
           '/control-proxy': {
-            target: 'http://192.168.10.252:23442',
+            target: process.env.VITE_CONTROL_PROXY_TARGET || 'http://192.168.1.68:23442',
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/control-proxy/, '')
           }
