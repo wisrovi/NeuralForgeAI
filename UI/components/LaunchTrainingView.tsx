@@ -409,7 +409,7 @@ metadata:
         setStudyDetail(null);
         setStudyError('');
         try {
-          const baseUrl = window.location.protocol + "//" + window.location.hostname + ":23442";
+          const baseUrl = UPLOAD_API_CONFIG.url.replace('/train', '');
           const res = await fetch(`${baseUrl}/study/${data.study_id}`);
           const detailData = await res.json();
           if (!res.ok) {
