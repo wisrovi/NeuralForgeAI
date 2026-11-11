@@ -83,8 +83,8 @@ export const LiveTrainingTelemetry: React.FC<LiveTrainingTelemetryProps> = ({
       return;
     }
 
-    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const apiBase = isLocalHost ? '/mlflow-proxy' : 'http://192.168.10.252:23435';
+    const isBrowser = typeof window !== 'undefined';
+    const apiBase = isBrowser ? '/mlflow-proxy' : 'http://192.168.10.252:23435';
 
     fetch(`${apiBase}/api/2.0/mlflow/experiments/get-by-name?experiment_name=${encodeURIComponent(studyName)}`)
       .then(res => res.ok ? res.json() : null)
