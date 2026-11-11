@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neuralforge-control-config
+  namespace: train-service
+  labels:
+    app.kubernetes.io/part-of: train-service2
+    app.kubernetes.io/component: control
+data:
+  CONTROL_HOST: "192.168.10.252"
+  REDIS_URL: "redis://192.168.10.252:23437/0"
+  OPTUNA_DB_URL: "postgresql://postgres:postgres@192.168.10.252:23436/wyoloservice"
+  MLFLOW_TRACKING_URI: "http://192.168.10.252:23435"
+  MINIO_URL: "http://192.168.10.252:23438"
+  VITE_API_URL: "http://neuralforge-api-svc:8000"
+  VITE_CONTROL_PROXY_TARGET: "http://neuralforge-api-svc:8000"
+  VITE_MLFLOW_TRACKING_URI: "http://192.168.10.252:23435"
+  VITE_REDIS_TRACKING_URL: "http://192.168.10.252:23438"
+  VITE_FILEBROWSER_URL: "http://192.168.10.252:23448/"
+  CIFS_USER: "wisrovi"
