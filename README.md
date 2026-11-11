@@ -66,7 +66,12 @@ docker network create control_network
 
 ## 📜 Changelog & Version History
 
-### Version 2.2.1 (Current Release) - 2026-11-11
+### Version 2.2.2 (Current Release) - 2026-11-11
+*   **Kubernetes Production Control Stack Deployment:** Introduced complete Kubernetes manifests in `deploy/k8s/` orchestrating the FastAPI REST gateway (`neuralforge-api`), Optuna study manager (`neuralforge-manager`), and W-Darwin Ops React UI (`neuralforge-ui`) within the `train-service` namespace, decoupling compute from NAS storage.
+*   **Universal MLflow Proxying:** Replaced local-only host checks in `LiveTrainingTelemetry`, `VisualXaiStudio`, and `StudyResultsViewer` with universal browser proxy routing via `/mlflow-proxy`, completely eliminating cross-origin CORS errors across all client networks.
+*   **High Availability Manager Worker:** Deployed Celery manager worker directly inside Kubernetes, synchronized across all 11 worker invokers.
+
+### Version 2.2.1 - 2026-11-11
 *   **Universal Control Proxy Routing:** Switched all UI browser client communication (workers inspection, study details tracking, and training submissions) to route via Vite's `/control-proxy` endpoint, completely resolving browser CORS blocks when accessed across heterogeneous cluster subnets.
 *   **Target Control Server Synchronization:** Configured reverse proxy destination to target `http://192.168.1.68:23442` and upgraded local gateway deployment to `wisrovi/train_service:api_server_v1.2.2` with `redis>=6.1.0,<7` and `wpipe==2.4.0`.
 
