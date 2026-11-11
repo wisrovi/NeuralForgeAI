@@ -66,7 +66,11 @@ docker network create control_network
 
 ## 📜 Changelog & Version History
 
-### Version 2.2.0 (Current Release) - 2026-11-10
+### Version 2.2.1 (Current Release) - 2026-11-11
+*   **Universal Control Proxy Routing:** Switched all UI browser client communication (workers inspection, study details tracking, and training submissions) to route via Vite's `/control-proxy` endpoint, completely resolving browser CORS blocks when accessed across heterogeneous cluster subnets.
+*   **Target Control Server Synchronization:** Configured reverse proxy destination to target `http://192.168.1.68:23442` and upgraded local gateway deployment to `wisrovi/train_service:api_server_v1.2.2` with `redis>=6.1.0,<7` and `wpipe==2.4.0`.
+
+### Version 2.2.0 - 2026-11-10
 *   **Celery Redis-py Dependency Upgrade:** Upgraded `redis` to `>=6.1.0,<7` across backend APIs and Gradio launcher services to resolve the Kombu runtime exception `ImproperlyConfigured: Redis transport requires redis-py versions 6.1.0 or later`, restoring worker discovery and study queuing.
 *   **Resilient Worker Inspection:** Wrapped worker queue inspection and running task queries in defensive error handlers to safeguard the API gateway from unexpected broker timeouts.
 *   **Authentic Telemetry & Results Isolation:** Fixed premature display of completed metrics and XAI heatmaps while training studies are in `STARTED` or `PENDING` states.
