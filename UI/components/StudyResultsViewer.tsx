@@ -81,8 +81,8 @@ export const StudyResultsViewer: React.FC<StudyResultsViewerProps> = ({
       return;
     }
 
-    const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    const mlflowApiBase = isLocalHost ? '/mlflow-proxy' : mlflowBaseUrl;
+    const isBrowser = typeof window !== 'undefined';
+    const mlflowApiBase = isBrowser ? '/mlflow-proxy' : mlflowBaseUrl;
 
     fetch(`${mlflowApiBase}/api/2.0/mlflow/experiments/get-by-name?experiment_name=${encodeURIComponent(studyName)}`)
       .then(res => res.ok ? res.json() : null)
