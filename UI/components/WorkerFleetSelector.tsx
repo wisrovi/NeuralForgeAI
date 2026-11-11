@@ -38,8 +38,7 @@ export const WorkerFleetSelector: React.FC<WorkerFleetSelectorProps> = ({
   onSelectWorker,
   workersApiUrl
 }) => {
-  const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  const effectiveWorkersUrl = workersApiUrl || (isLocalHost ? '/control-proxy/workers' : 'http://192.168.10.252:23442/workers');
+  const effectiveWorkersUrl = workersApiUrl || '/control-proxy/workers';
 
   const [nodes, setNodes] = useState<WorkerNodeInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
