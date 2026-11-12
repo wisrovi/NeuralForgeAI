@@ -8,10 +8,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.admin_router import router as admin_router
+from routers.dataset_router import router as dataset_router
 from routers.study_router import router as study_router
 from utils.preflight import validate_training_config_preflight
 
-VERSION: str = "v1.5.0"
+VERSION: str = "v1.6.0"
 
 app: FastAPI = FastAPI(title="ML CLUSTER API v5 - Strict Priority & Private Mode")
 
@@ -27,6 +28,7 @@ app.add_middleware(
 # Register modular routers
 app.include_router(study_router)
 app.include_router(admin_router)
+app.include_router(dataset_router)
 
 __all__ = ["app", "VERSION", "validate_training_config_preflight"]
 
