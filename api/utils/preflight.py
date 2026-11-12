@@ -2,6 +2,9 @@
 
 from typing import Any
 from fastapi import HTTPException
+from loguru import logger
+
+from utils.cifs_validator import validate_dataset_cifs
 
 
 def validate_training_config_preflight(config_data: dict[str, Any]) -> None:
@@ -64,6 +67,17 @@ def validate_training_config_preflight(config_data: dict[str, Any]) -> None:
             status_code=400,
             detail=f"Pre-flight validation failed: Dataset path '{str_ds}' is too generic. Specify project subpath (e.g. '/datasets/<project>/data.yaml').",
         )
+
+    # Physical storage check on CIFS share
+    if str_ds.startswith("/datasets/") or str_ds.startswith("datasets/"):
+        check_result = validate_dataset_cifs(str_ds)
+        if not check_result.get("valid"):
+            suggestions = check_result.get("suggestions", [])
+            sugg_msg = f" Did you mean: {', '.join(suggestions)}?" if suggestions else ""
+            raise HTTPException(
+                status_code=422,
+                detail=f"Pre-flight validation failed: Dataset descriptor does not exist on storage at '{str_ds}'.{sugg_msg}",
+            )
 
     # 2. Model placeholder check (if model is specified)
     model_val = config_data.get("model")
