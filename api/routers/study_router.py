@@ -8,6 +8,7 @@ import urllib.request
 import yaml
 from celery.result import AsyncResult
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from loguru import logger
 
 from celery_config import app as celery_app
 from dto.api_dto import StudyStatusDTO, TasksReportDTO, TrainResponseDTO
