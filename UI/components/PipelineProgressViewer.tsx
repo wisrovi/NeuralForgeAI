@@ -46,6 +46,9 @@ export const PipelineProgressViewer: React.FC<PipelineProgressViewerProps> = ({
   const isStarted = studyState === 'STARTED' || studyState === 'SUCCESS' || studyState === 'COMPLETED';
   const isFinished = studyState === 'COMPLETED' || (resultsData && Object.keys(resultsData).length > 0);
   const isFailed = studyState === 'FAILURE' || (errorData && !isFinished);
+  const errStr = typeof errorData === 'string' ? errorData : JSON.stringify(errorData || {});
+  const isDataCheckFailed = Boolean(isFailed && (errStr.includes('check_dataset') || errStr.includes('Dataset') || errStr.includes('502')));
+  const isEnvCheckFailed = Boolean(isFailed && (errStr.includes('GPU') || errStr.includes('MinIO') || errStr.includes('501') || errStr.includes('503')));
 
   const steps: PipelineStepState[] = [
     {
@@ -54,8 +57,8 @@ export const PipelineProgressViewer: React.FC<PipelineProgressViewerProps> = ({
       technicalName: 'check_gpu & check_minio',
       description: 'Verificación de tarjeta gráfica, memoria VRAM y conexión al almacenamiento seguro.',
       icon: <Cpu size={16} />,
-      status: isStarted ? 'completed' : 'pending',
-      detail: isStarted ? (activeInvoker || 'GPU Asignada') : 'En espera'
+      status: isEnvCheckFailed ? 'failed' : isStarted ? 'completed' : 'pending',
+      detail: isEnvCheckFailed ? 'Error en GPU o Almacenamiento' : isStarted ? (activeInvoker || 'GPU Asignada') : 'En espera'
     },
     {
       id: 'step_data',
@@ -63,8 +66,8 @@ export const PipelineProgressViewer: React.FC<PipelineProgressViewerProps> = ({
       technicalName: 'check_dataset',
       description: 'Inspección de las imágenes de entrenamiento y sus etiquetas anotadas.',
       icon: <Database size={16} />,
-      status: isStarted ? 'completed' : 'pending',
-      detail: isStarted ? 'Conjunto validado' : 'Pendiente'
+      status: isDataCheckFailed ? 'failed' : isStarted && !isEnvCheckFailed ? 'completed' : 'pending',
+      detail: isDataCheckFailed ? 'Error: Ruta de Dataset no encontrada' : isStarted ? 'Conjunto validado' : 'Pendiente'
     },
     {
       id: 'step_train',
@@ -72,8 +75,8 @@ export const PipelineProgressViewer: React.FC<PipelineProgressViewerProps> = ({
       technicalName: 'train_model (YOLO & Optuna)',
       description: 'El modelo neuronal ajusta sus millones de parámetros visuales sobre los datos.',
       icon: <Brain size={16} />,
-      status: isFinished ? 'completed' : isStarted ? 'running' : 'pending',
-      detail: isFinished ? 'Entrenamiento finalizado' : isStarted ? 'Entrenando épocas en GPU...' : 'En cola'
+      status: isDataCheckFailed || isEnvCheckFailed ? 'pending' : isFinished ? 'completed' : isStarted ? 'running' : 'pending',
+      detail: isDataCheckFailed ? 'Cancelado por fallo en dataset' : isFinished ? 'Entrenamiento finalizado' : isStarted ? 'Entrenando épocas en GPU...' : 'En cola'
     },
     {
       id: 'step_rd',
