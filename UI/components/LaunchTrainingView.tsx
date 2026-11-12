@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Rocket, File, FileCode, CheckCircle, AlertCircle, AlertTriangle, Zap, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame, Calendar } from 'lucide-react';
+import { Rocket, FileCode, CheckCircle, AlertCircle, AlertTriangle, Zap, Loader2, X, Info, UploadCloud, HardDrive, ShieldAlert, Search, Server, Clock, Activity, Flame, Calendar } from 'lucide-react';
 import { UPLOAD_API_CONFIG } from '../constants';
 import { UserProfile, ProjectDefinition, UserRole } from '../types';
 import SearchableSelect from './SearchableSelect';
@@ -29,6 +29,7 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
   const [parsedDataPath, setParsedDataPath] = useState<string>('');
   const [parsedYaml, setParsedYaml] = useState<YamlParsedData>({});
   const [isYamlValid, setIsYamlValid] = useState<boolean>(true);
+  const [isDatasetPhysicallyValid, setIsDatasetPhysicallyValid] = useState<boolean>(true);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [responseMsg, setResponseMsg] = useState('');
@@ -227,6 +228,17 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     reader.readAsText(selectedFile);
   };
 
+  const handleApplyDatasetSuggestion = (suggestedPath: string) => {
+    if (!fileContent || !parsedDataPath) return;
+    const newContent = fileContent.replace(parsedDataPath, suggestedPath);
+    setFileContent(newContent);
+    setParsedDataPath(suggestedPath);
+    if (file) {
+      const updatedFile = new window.File([newContent], file.name, { type: file.type || 'text/yaml' });
+      setFile(updatedFile);
+    }
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -282,8 +294,11 @@ const LaunchTrainingView: React.FC<LaunchTrainingViewProps> = ({ users, projects
     const project = projects.find(p => p.id === selectedProjectId);
 
     const formData = new FormData();
-    // Fields expected by the API
-    formData.append('config_file', file);
+    // Fields expected by the API (use updated fileContent blob if present)
+    const effectiveFile = fileContent 
+      ? new window.File([fileContent], file.name, { type: file.type || 'text/yaml' }) 
+      : file;
+    formData.append('config_file', effectiveFile);
     formData.append('mode', mode);
     formData.append('priority', priority);
     if (mode === 'private' && workerName) {
@@ -855,6 +870,7 @@ sweeper:
                       setParsedYaml({});
                       setValidationErrors([]);
                       setIsYamlValid(true);
+                      setIsDatasetPhysicallyValid(true);
                     }}
                   />
 
@@ -866,6 +882,8 @@ sweeper:
                         modelName={parsedYaml.model || 'yolo11n.pt'}
                         batchSize={parsedYaml.batch || 16}
                         epochs={parsedYaml.epochs || 5}
+                        onValidationChange={(isValid) => setIsDatasetPhysicallyValid(isValid)}
+                        onApplySuggestion={handleApplyDatasetSuggestion}
                       />
                     </div>
                   )}
@@ -900,7 +918,7 @@ sweeper:
             )}
 
             {/* Validation & Requirements Callout when Launch is Disabled */}
-            {(!file || !isYamlValid || !selectedUserId || !selectedProjectId) && uploadStatus !== 'uploading' && (
+            {(!file || !isYamlValid || !isDatasetPhysicallyValid || !selectedUserId || !selectedProjectId) && uploadStatus !== 'uploading' && (
               <div className="mb-4 p-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
                 <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-500" />
                 <div className="flex-1">
@@ -922,6 +940,12 @@ sweeper:
                       {isYamlValid ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-red-500" />}
                       <span>Estructura YAML: {isYamlValid ? '✓ Válida' : 'Con errores'}</span>
                     </div>
+                    {file && parsedDataPath && (
+                      <div className={`flex items-center gap-1.5 sm:col-span-2 ${isDatasetPhysicallyValid ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400 font-semibold'}`}>
+                        {isDatasetPhysicallyValid ? <CheckCircle size={13} className="text-green-500" /> : <AlertCircle size={13} className="text-red-500" />}
+                        <span>Almacenamiento CIFS: {isDatasetPhysicallyValid ? '✓ Dataset localizado en el clúster' : '❌ El dataset no existe en el almacenamiento compartido'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -930,17 +954,18 @@ sweeper:
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!file || !isYamlValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'}
+              disabled={!file || !isYamlValid || !isDatasetPhysicallyValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'}
               title={
                 !file ? 'Debes seleccionar o subir un archivo YAML' :
                 !isYamlValid ? 'El archivo YAML contiene errores estructurales' :
+                !isDatasetPhysicallyValid ? 'El archivo data.yaml especificado no existe físicamente en el clúster' :
                 !selectedUserId ? 'Debes seleccionar el Desarrollador (Initiating User)' :
                 !selectedProjectId ? 'Debes seleccionar el Proyecto de destino (Target Project)' :
                 'Listo para desplegar el entrenamiento en el cluster'
               }
               className={`
                 w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2.5 transition-all duration-200
-                ${!file || !isYamlValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'
+                ${!file || !isYamlValid || !isDatasetPhysicallyValid || !selectedUserId || !selectedProjectId || uploadStatus === 'uploading'
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed border border-gray-200 dark:border-gray-700'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transform hover:-translate-y-0.5'
                 }
