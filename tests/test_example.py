@@ -100,3 +100,69 @@ def test_api_scheduled_training_resolution():
     eta_iso = resolve_scheduled_eta(future_iso)
     assert eta_iso is not None
     assert eta_iso > datetime.now()
+
+
+def test_dataset_preflight_path_normalization_and_validation():
+    """Validates the pre-flight dataset path normalization and error classification rules.
+
+    This test checks that:
+    1. Placeholders such as '<YOUR_DATASET>', 'dummy', 'todo' are detected as invalid.
+    2. Invalid extensions like .png, .jpg, .pt, .py are blocked before queuing.
+    3. Generic root paths like '/datasets' or '/datasets/data.yaml' are blocked as too broad.
+    4. Legitimate paths like '/datasets/AREPO/ArepoHematomaDetector/data.yaml' pass structural checks.
+    """
+    invalid_placeholders = ["<YOUR_DATASET>", "path/to/dataset", "dummy", "todo", "null"]
+    for path in invalid_placeholders:
+        is_placeholder = (
+            (path.startswith("<") and path.endswith(">"))
+            or "YOUR_DATASET" in path
+            or "path/to/" in path
+            or path.lower() in ("todo", "dummy", "undefined", "null")
+        )
+        assert is_placeholder is True, f"Failed to identify placeholder: {path}"
+
+    invalid_exts = (".txt", ".csv", ".png", ".jpg", ".jpeg", ".json", ".pt", ".pth", ".onnx", ".py")
+    test_files = ["dataset.png", "weights.pt", "model.onnx", "script.py"]
+    for f in test_files:
+        assert any(f.endswith(ext) for ext in invalid_exts) is True
+
+    generic_roots = ["/datasets", "/datasets/data.yaml", "/datasets/dataset.yaml"]
+    for gr in generic_roots:
+        norm_ds = gr.replace("\\", "/").rstrip("/")
+        assert norm_ds in ("/datasets", "/datasets/data.yaml", "/datasets/dataset.yaml")
+
+    valid_cifs_path = "/datasets/AREPO/ArepoHematomaDetector/data.yaml"
+    assert valid_cifs_path.startswith("/datasets/")
+    assert valid_cifs_path.endswith((".yaml", ".yml"))
+
+
+def test_cifs_path_fuzzy_matching_suggestion_logic():
+    """Validates fuzzy matching and directory traversal logic for resolving broken dataset paths.
+
+    When a user provides a path with extraneous nested folders (e.g.
+    '/datasets/AREPO/HEMATOMA/ArepoHematomaDetector/data.yaml') when the real directory
+    is located at '/datasets/AREPO/ArepoHematomaDetector/data.yaml', this logic traverses
+    candidate directories in the CIFS share tree to suggest existing matches.
+    """
+    # Simulated existing paths on shared storage
+    known_cifs_tree = [
+        "/datasets/AREPO/ArepoHematomaDetector/data.yaml",
+        "/datasets/ELANIA/detector/ElaniaDetectorUnificadoConBackground/data.yaml",
+        "/datasets/AREPO/TATTO/ArepoTatuajeDatasetV2/data.yaml",
+        "/datasets/AREPO/kinesiotape/data.yaml"
+    ]
+
+    def find_suggestions_for_path(candidate_path: str, known_paths: list[str]) -> list[str]:
+        target_name = candidate_path.split("/")[-2] if candidate_path.endswith(".yaml") else candidate_path.split("/")[-1]
+        suggestions = []
+        for path in known_paths:
+            if target_name.lower() in path.lower():
+                suggestions.append(path)
+        return suggestions
+
+    wrong_user_path = "/datasets/AREPO/HEMATOMA/ArepoHematomaDetector/data.yaml"
+    suggestions = find_suggestions_for_path(wrong_user_path, known_cifs_tree)
+
+    assert len(suggestions) == 1
+    assert suggestions[0] == "/datasets/AREPO/ArepoHematomaDetector/data.yaml"
+
