@@ -18,8 +18,8 @@ This repository contains the web user interface dashboard (WDarwin Ops) and the 
 ---
 
 ## 🛠️ Technology Stack & Key Libraries
-*   **Frontend UI:** React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons.
-*   **API Gateway:** Python 3.10+, FastAPI, Uvicorn, PyYAML, Pydantic, wpipe (DAG orchestration & state steps).
+*   **Frontend UI:** React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons.
+*   **API Gateway:** Python 3.10+, FastAPI, Uvicorn, PyYAML, Pydantic, wpipe (DAG orchestration & state steps), `smbprotocol` (Samba CIFS cluster storage verification).
 *   **Distributed Messaging & State:** Celery, Redis (study metadata persistence with dynamic `2.0x` TTL scaling based on optional `train.time`).
 *   **Testing & Quality Assurance:** Pytest, `pytest-cov`, Docker isolated test runner.
 
@@ -109,6 +109,10 @@ If you use this project in academic research, you are required to cite this repo
 
 
 ## Changelog
+- **v1.6.0**:
+  - **Physical Dataset Storage Pre-Flight Validation:** Added real-time CIFS Samba storage verification endpoint (`/api/v1/datasets/validate`) and integrated it into the API Gateway (`validate_training_config_preflight`) to reject invalid dataset paths with `HTTP 422 Unprocessable Entity` before queuing.
+  - **Reactive UI Validation & Smart Auto-Suggestions:** Updated `DatasetPreflightHealth` to query storage asynchronously in real-time, block the "Launch Training Job" button when datasets are missing, and provide one-click fuzzy path auto-corrections (`Wand2` suggestion button).
+  - **Pipeline Stage Integrity:** Refactored `PipelineProgressViewer` to accurately display dataset check failures instead of prematurely assuming completion.
 - **v1.5.0**:
   - **Live Training Telemetry & Loss Curves:** Added `LiveTrainingTelemetry` component for real-time epoch tracking and zero-dependency SVG sparkline charts of box and classification loss convergence.
   - **Visual Explainability (XAI) Suite:** Integrated `VisualXaiStudio` featuring an interactive Before/After split slider for Grad-CAM heatmaps with natural language focal diagnostics.
